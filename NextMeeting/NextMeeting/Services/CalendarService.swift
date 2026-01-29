@@ -4,15 +4,38 @@ import SwiftUI
 @MainActor
 class CalendarService: ObservableObject {
     private let eventStore = EKEventStore()
+    private var alertedMeetingIds: Set<String> = []
 
     @Published var meetings: [Meeting] = []
     @Published var hasAccess: Bool = false
+    @Published var fullScreenAlertsEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(fullScreenAlertsEnabled, forKey: "fullScreenAlertsEnabled")
+        }
+    }
+
+    var meetingToAlert: Meeting? {
+        guard fullScreenAlertsEnabled else { return nil }
+        guard let meeting = meetings.first(where: { $0.isJustStarting && !alertedMeetingIds.contains($0.id) }) else {
+            return nil
+        }
+        return meeting
+    }
+
+    func markMeetingAlerted(_ meeting: Meeting) {
+        alertedMeetingIds.insert(meeting.id)
+    }
+
+    var currentMeeting: Meeting? {
+        meetings.first { $0.isHappeningNow }
+    }
 
     var nextMeeting: Meeting? {
-        meetings.first
+        meetings.first { !$0.isHappeningNow }
     }
 
     init() {
+        self.fullScreenAlertsEnabled = UserDefaults.standard.bool(forKey: "fullScreenAlertsEnabled")
         checkAuthorizationStatus()
     }
 

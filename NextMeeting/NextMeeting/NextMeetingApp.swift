@@ -4,6 +4,7 @@ import SwiftUI
 struct NextMeetingApp: App {
     @StateObject private var calendarService = CalendarService()
     @State private var refreshTimer: Timer?
+    private let alertController = MeetingAlertWindowController()
 
     var body: some Scene {
         MenuBarExtra {
@@ -18,6 +19,11 @@ struct NextMeetingApp: App {
         .onChange(of: calendarService.hasAccess) { newValue in
             if newValue {
                 startRefreshTimer()
+            }
+        }
+        .onChange(of: calendarService.meetingToAlert?.id) { meetingId in
+            if let meeting = calendarService.meetingToAlert {
+                showAlert(for: meeting)
             }
         }
     }
@@ -38,10 +44,17 @@ struct NextMeetingApp: App {
         refreshTimer?.invalidate()
         calendarService.fetchUpcomingMeetings()
 
-        refreshTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { _ in
             Task { @MainActor in
                 calendarService.fetchUpcomingMeetings()
             }
+        }
+    }
+
+    private func showAlert(for meeting: Meeting) {
+        calendarService.markMeetingAlerted(meeting)
+        alertController.showAlert(for: meeting) { url in
+            NSWorkspace.shared.open(url)
         }
     }
 }

@@ -15,6 +15,12 @@ struct Meeting: Identifiable {
         return now >= startDate && now <= endDate
     }
 
+    var isJustStarting: Bool {
+        let now = Date()
+        let secondsSinceStart = now.timeIntervalSince(startDate)
+        return secondsSinceStart >= 0 && secondsSinceStart <= 60
+    }
+
     var timeString: String {
         let formatter = DateFormatter()
         formatter.timeStyle = .short

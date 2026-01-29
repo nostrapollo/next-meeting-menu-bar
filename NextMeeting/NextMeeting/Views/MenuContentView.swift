@@ -64,6 +64,21 @@ struct MenuContentView: View {
 
     private var footerButtons: some View {
         VStack(spacing: 4) {
+            Toggle(isOn: $calendarService.fullScreenAlertsEnabled) {
+                HStack {
+                    Image(systemName: "bell.badge")
+                    Text("Full Screen Alerts")
+                    Spacer()
+                }
+            }
+            .toggleStyle(.switch)
+            .controlSize(.small)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+
+            Divider()
+                .padding(.vertical, 4)
+
             Button {
                 calendarService.fetchUpcomingMeetings()
             } label: {

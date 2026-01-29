@@ -12,6 +12,7 @@
 		A1000003 /* CalendarService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000013 /* CalendarService.swift */; };
 		A1000004 /* MenuContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000014 /* MenuContentView.swift */; };
 		A1000005 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000015 /* Assets.xcassets */; };
+		A1000006 /* MeetingAlertWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000030 /* MeetingAlertWindow.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,6 +24,7 @@
 		A1000015 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1000016 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1000017 /* NextMeeting.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NextMeeting.entitlements; sourceTree = "<group>"; };
+		A1000030 /* MeetingAlertWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingAlertWindow.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -86,6 +88,7 @@
 			isa = PBXGroup;
 			children = (
 				A1000014 /* MenuContentView.swift */,
+				A1000030 /* MeetingAlertWindow.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -163,6 +166,7 @@
 				A1000002 /* Meeting.swift in Sources */,
 				A1000003 /* CalendarService.swift in Sources */,
 				A1000004 /* MenuContentView.swift in Sources */,
+				A1000006 /* MeetingAlertWindow.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
