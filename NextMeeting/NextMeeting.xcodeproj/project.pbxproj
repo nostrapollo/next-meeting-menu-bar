@@ -13,6 +13,7 @@
 		A1000004 /* MenuContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000014 /* MenuContentView.swift */; };
 		A1000005 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000015 /* Assets.xcassets */; };
 		A1000006 /* MeetingAlertWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000030 /* MeetingAlertWindow.swift */; };
+		A1000040 /* LaunchAtLoginService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000031 /* LaunchAtLoginService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,6 +26,7 @@
 		A1000016 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1000017 /* NextMeeting.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NextMeeting.entitlements; sourceTree = "<group>"; };
 		A1000030 /* MeetingAlertWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingAlertWindow.swift; sourceTree = "<group>"; };
+		A1000031 /* LaunchAtLoginService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -38,7 +40,7 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		A1000007 = {
+		A1000050 = {
 			isa = PBXGroup;
 			children = (
 				A1000020 /* NextMeeting */,
@@ -80,6 +82,7 @@
 			isa = PBXGroup;
 			children = (
 				A1000013 /* CalendarService.swift */,
+				A1000031 /* LaunchAtLoginService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -136,7 +139,7 @@
 				en,
 				Base,
 			);
-			mainGroup = A1000007;
+			mainGroup = A1000050;
 			productRefGroup = A100000F /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -167,6 +170,7 @@
 				A1000003 /* CalendarService.swift in Sources */,
 				A1000004 /* MenuContentView.swift in Sources */,
 				A1000006 /* MeetingAlertWindow.swift in Sources */,
+				A1000040 /* LaunchAtLoginService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -3,12 +3,13 @@ import SwiftUI
 @main
 struct NextMeetingApp: App {
     @StateObject private var calendarService = CalendarService()
+    @StateObject private var launchAtLoginService = LaunchAtLoginService()
     @State private var refreshTimer: Timer?
     private let alertController = MeetingAlertWindowController()
 
     var body: some Scene {
         MenuBarExtra {
-            MenuContentView(calendarService: calendarService)
+            MenuContentView(calendarService: calendarService, launchAtLoginService: launchAtLoginService)
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: "calendar")

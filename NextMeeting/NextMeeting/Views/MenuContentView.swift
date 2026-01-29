@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MenuContentView: View {
     @ObservedObject var calendarService: CalendarService
+    @ObservedObject var launchAtLoginService: LaunchAtLoginService
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -68,6 +69,18 @@ struct MenuContentView: View {
                 HStack {
                     Image(systemName: "bell.badge")
                     Text("Full Screen Alerts")
+                    Spacer()
+                }
+            }
+            .toggleStyle(.switch)
+            .controlSize(.small)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+
+            Toggle(isOn: $launchAtLoginService.isEnabled) {
+                HStack {
+                    Image(systemName: "power")
+                    Text("Launch at Login")
                     Spacer()
                 }
             }
