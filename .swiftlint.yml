@@ -1,0 +1,40 @@
+# SwiftLint Configuration
+
+included:
+  - NextMeeting
+
+excluded:
+  - NextMeeting/NextMeeting.xcodeproj
+
+# Rules
+disabled_rules:
+  - trailing_whitespace
+  - line_length
+
+opt_in_rules:
+  - empty_count
+  - empty_string
+  - force_unwrapping
+
+# Configuration
+identifier_name:
+  min_length:
+    warning: 2
+    error: 1
+  excluded:
+    - id
+    - to
+    - x
+    - y
+
+type_body_length:
+  warning: 300
+  error: 500
+
+file_length:
+  warning: 500
+  error: 1000
+
+function_body_length:
+  warning: 50
+  error: 100
