@@ -25,6 +25,11 @@ class CalendarService: ObservableObject {
     func markMeetingAlerted(_ meeting: Meeting) {
         alertedMeetingIds.insert(meeting.id)
     }
+    
+    private func cleanupAlertedMeetingIds() {
+        let currentMeetingIds = Set(meetings.map { $0.id })
+        alertedMeetingIds = alertedMeetingIds.intersection(currentMeetingIds)
+    }
 
     var currentMeeting: Meeting? {
         meetings.first { $0.isHappeningNow }
@@ -98,6 +103,8 @@ class CalendarService: ObservableObject {
                 meetingURL: extractMeetingURL(from: event)
             )
         }
+        
+        cleanupAlertedMeetingIds()
     }
 
     private func extractMeetingURL(from event: EKEvent) -> URL? {
