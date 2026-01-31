@@ -5,6 +5,7 @@ import SwiftUI
 class CalendarService: ObservableObject {
     private let eventStore = EKEventStore()
     private var alertedMeetingIds: Set<String> = []
+    private var preferencesService: PreferencesService?
 
     @Published var meetings: [Meeting] = []
     @Published var hasAccess: Bool = false
@@ -14,10 +15,34 @@ class CalendarService: ObservableObject {
             UserDefaults.standard.set(fullScreenAlertsEnabled, forKey: "fullScreenAlertsEnabled")
         }
     }
+    
+    func setPreferencesService(_ service: PreferencesService) {
+        self.preferencesService = service
+    }
 
     var meetingToAlert: Meeting? {
         guard fullScreenAlertsEnabled else { return nil }
-        guard let meeting = meetings.first(where: { $0.isJustStarting && !alertedMeetingIds.contains($0.id) }) else {
+        
+        let alertMinutes = preferencesService?.alertMinutesBefore ?? 0
+        
+        guard let meeting = meetings.first(where: { meeting in
+            if alertedMeetingIds.contains(meeting.id) {
+                return false
+            }
+            
+            let now = Date()
+            let secondsUntilStart = meeting.startDate.timeIntervalSince(now)
+            let minutesUntilStart = secondsUntilStart / 60
+            
+            // Alert if we're within the specified minutes before start
+            if alertMinutes == 0 {
+                // At start: within 0 to 60 seconds after start
+                return meeting.isJustStarting
+            } else {
+                // Before start: check if we're within the alert window (e.g., 1-2 minutes before for 1 minute setting)
+                return minutesUntilStart >= Double(alertMinutes - 1) && minutesUntilStart <= Double(alertMinutes)
+            }
+        }) else {
             return nil
         }
         return meeting
@@ -82,7 +107,8 @@ class CalendarService: ObservableObject {
 
         do {
             let now = Date()
-            let endDate = Calendar.current.date(byAdding: .hour, value: 24, to: now)!
+            let lookaheadHours = preferencesService?.lookaheadHours ?? 24
+            let endDate = Calendar.current.date(byAdding: .hour, value: lookaheadHours, to: now)!
 
             let predicate = eventStore.predicateForEvents(
                 withStart: now,

@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct NextMeetingApp: App {
+    @StateObject private var preferencesService = PreferencesService()
     @StateObject private var calendarService = CalendarService()
     @StateObject private var launchAtLoginService = LaunchAtLoginService()
     @State private var refreshTimer: Timer?
@@ -9,7 +10,11 @@ struct NextMeetingApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            MenuContentView(calendarService: calendarService, launchAtLoginService: launchAtLoginService)
+            MenuContentView(
+                calendarService: calendarService,
+                launchAtLoginService: launchAtLoginService,
+                preferencesService: preferencesService
+            )
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: "calendar")
@@ -19,6 +24,12 @@ struct NextMeetingApp: App {
         .menuBarExtraStyle(.window)
         .onChange(of: calendarService.hasAccess) { newValue in
             if newValue {
+                calendarService.setPreferencesService(preferencesService)
+                startRefreshTimer()
+            }
+        }
+        .onChange(of: preferencesService.refreshIntervalSeconds) { _ in
+            if calendarService.hasAccess {
                 startRefreshTimer()
             }
         }
@@ -26,6 +37,9 @@ struct NextMeetingApp: App {
             if let meeting = calendarService.meetingToAlert {
                 showAlert(for: meeting)
             }
+        }
+        .onAppear {
+            calendarService.setPreferencesService(preferencesService)
         }
     }
 
@@ -45,7 +59,8 @@ struct NextMeetingApp: App {
         refreshTimer?.invalidate()
         calendarService.fetchUpcomingMeetings()
 
-        refreshTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { _ in
+        let interval = TimeInterval(preferencesService.refreshIntervalSeconds)
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
             Task { @MainActor in
                 calendarService.fetchUpcomingMeetings()
             }

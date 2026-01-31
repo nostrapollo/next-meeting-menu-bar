@@ -3,7 +3,9 @@ import SwiftUI
 struct MenuContentView: View {
     @ObservedObject var calendarService: CalendarService
     @ObservedObject var launchAtLoginService: LaunchAtLoginService
+    @ObservedObject var preferencesService: PreferencesService
     @Environment(\.openURL) private var openURL
+    @State private var showingSettings = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -20,6 +22,9 @@ struct MenuContentView: View {
         }
         .padding(.vertical, 8)
         .frame(width: 300)
+        .sheet(isPresented: $showingSettings) {
+            SettingsView(preferencesService: preferencesService)
+        }
     }
 
     @ViewBuilder
@@ -117,6 +122,20 @@ struct MenuContentView: View {
                 HStack {
                     Image(systemName: "arrow.clockwise")
                     Text("Refresh")
+                    Spacer()
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+
+            Button {
+                showingSettings = true
+            } label: {
+                HStack {
+                    Image(systemName: "gear")
+                    Text("Settings")
                     Spacer()
                 }
                 .contentShape(Rectangle())
