@@ -4,6 +4,7 @@ struct MenuContentView: View {
     @ObservedObject var calendarService: CalendarService
     @ObservedObject var launchAtLoginService: LaunchAtLoginService
     @ObservedObject var preferencesService: PreferencesService
+    @ObservedObject var keyboardShortcutService: KeyboardShortcutService
     @Environment(\.openURL) private var openURL
     @State private var showingSettings = false
 
@@ -23,7 +24,8 @@ struct MenuContentView: View {
         .padding(.vertical, 8)
         .frame(width: 300)
         .sheet(isPresented: $showingSettings) {
-            SettingsView(preferencesService: preferencesService)
+            SettingsView(preferencesService: preferencesService,
+                        keyboardShortcutService: keyboardShortcutService)
         }
     }
 
