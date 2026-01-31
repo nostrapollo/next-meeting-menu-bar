@@ -11,7 +11,7 @@ A simple macOS menu bar app that shows your next calendar meeting and a countdow
 - **Menu bar display** - Shows countdown + meeting title (e.g., "15m: Team Standup")
 - **Quick overview** - Click to see your next 5 upcoming meetings
 - **Join meetings** - One-click join for Zoom, Google Meet, Microsoft Teams, and WebEx
-- **Auto-refresh** - Updates every 60 seconds
+- **Auto-refresh** - Updates every 30 seconds
 - **All calendars** - Works with any calendar configured in macOS Calendar app (iCloud, Google, Exchange, etc.)
 
 ## Screenshot
