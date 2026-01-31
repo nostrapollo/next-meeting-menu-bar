@@ -1,10 +1,12 @@
 import SwiftUI
+import UserNotifications
 
 @main
 struct NextMeetingApp: App {
     @StateObject private var preferencesService = PreferencesService()
     @StateObject private var calendarService = CalendarService()
     @StateObject private var launchAtLoginService = LaunchAtLoginService()
+    @StateObject private var keyboardShortcutService = KeyboardShortcutService()
     @State private var refreshTimer: Timer?
     private let alertController = MeetingAlertWindowController()
 
@@ -13,7 +15,8 @@ struct NextMeetingApp: App {
             MenuContentView(
                 calendarService: calendarService,
                 launchAtLoginService: launchAtLoginService,
-                preferencesService: preferencesService
+                preferencesService: preferencesService,
+                keyboardShortcutService: keyboardShortcutService
             )
         } label: {
             HStack(spacing: 4) {
@@ -40,6 +43,8 @@ struct NextMeetingApp: App {
         }
         .onAppear {
             calendarService.setPreferencesService(preferencesService)
+            setupKeyboardShortcut()
+            requestNotificationPermissions()
         }
     }
 
@@ -71,6 +76,90 @@ struct NextMeetingApp: App {
         calendarService.markMeetingAlerted(meeting)
         alertController.showAlert(for: meeting) { url in
             NSWorkspace.shared.open(url)
+        }
+    }
+    
+    private func setupKeyboardShortcut() {
+        keyboardShortcutService.setup { [self] in
+            handleKeyboardShortcut()
+        }
+    }
+    
+    private func handleKeyboardShortcut() {
+        // Try current meeting first, then next meeting
+        let meetingToJoin = calendarService.currentMeeting ?? calendarService.nextMeeting
+        
+        guard let meeting = meetingToJoin else {
+            showNoMeetingNotification()
+            return
+        }
+        
+        guard let url = meeting.meetingURL else {
+            showNoMeetingURLNotification(meetingTitle: meeting.title)
+            return
+        }
+        
+        NSWorkspace.shared.open(url)
+        showMeetingJoinedNotification(meetingTitle: meeting.title)
+    }
+    
+    private func requestNotificationPermissions() {
+        let center = UNUserNotificationCenter.current()
+        center.requestAuthorization(options: [.alert, .sound]) { granted, error in
+            if let error = error {
+                print("Notification permission error: \(error)")
+            }
+        }
+    }
+    
+    private func showNoMeetingNotification() {
+        let content = UNMutableNotificationContent()
+        content.title = "No Meeting to Join"
+        content.body = "There are no upcoming meetings at this time."
+        content.sound = .default
+        
+        let request = UNNotificationRequest(identifier: UUID().uuidString,
+                                           content: content,
+                                           trigger: nil)
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Failed to show notification: \(error)")
+            }
+        }
+    }
+    
+    private func showNoMeetingURLNotification(meetingTitle: String) {
+        let content = UNMutableNotificationContent()
+        content.title = "No Meeting URL"
+        content.body = "'\(meetingTitle)' doesn't have a meeting URL."
+        content.sound = .default
+        
+        let request = UNNotificationRequest(identifier: UUID().uuidString,
+                                           content: content,
+                                           trigger: nil)
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Failed to show notification: \(error)")
+            }
+        }
+    }
+    
+    private func showMeetingJoinedNotification(meetingTitle: String) {
+        let content = UNMutableNotificationContent()
+        content.title = "Joining Meeting"
+        content.body = meetingTitle
+        content.sound = .default
+        
+        let request = UNNotificationRequest(identifier: UUID().uuidString,
+                                           content: content,
+                                           trigger: nil)
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Failed to show notification: \(error)")
+            }
         }
     }
 }

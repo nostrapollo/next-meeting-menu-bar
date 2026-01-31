@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var preferencesService: PreferencesService
+    @ObservedObject var keyboardShortcutService: KeyboardShortcutService
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
@@ -66,6 +67,29 @@ struct SettingsView: View {
                 }
                 
                 Text("When to show full screen alerts")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.leading, 140)
+                
+                // Keyboard Shortcut
+                HStack {
+                    Text("Keyboard Shortcut:")
+                        .frame(width: 140, alignment: .leading)
+                    
+                    Toggle("", isOn: $keyboardShortcutService.isEnabled)
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                    
+                    if keyboardShortcutService.isEnabled {
+                        Text(keyboardShortcutService.shortcutDisplayString)
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                }
+                
+                Text("Press \(keyboardShortcutService.shortcutDisplayString) to join next meeting")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .padding(.leading, 140)
