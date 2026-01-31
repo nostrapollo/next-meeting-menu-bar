@@ -8,6 +8,7 @@ class CalendarService: ObservableObject {
 
     @Published var meetings: [Meeting] = []
     @Published var hasAccess: Bool = false
+    @Published var errorMessage: String?
     @Published var fullScreenAlertsEnabled: Bool {
         didSet {
             UserDefaults.standard.set(fullScreenAlertsEnabled, forKey: "fullScreenAlertsEnabled")
@@ -79,32 +80,39 @@ class CalendarService: ObservableObject {
     func fetchUpcomingMeetings() {
         guard hasAccess else { return }
 
-        let now = Date()
-        let endDate = Calendar.current.date(byAdding: .hour, value: 24, to: now)!
+        do {
+            let now = Date()
+            let endDate = Calendar.current.date(byAdding: .hour, value: 24, to: now)!
 
-        let predicate = eventStore.predicateForEvents(
-            withStart: now,
-            end: endDate,
-            calendars: nil
-        )
-
-        let events = eventStore.events(matching: predicate)
-            .filter { !$0.isAllDay }
-            .sorted { $0.startDate < $1.startDate }
-
-        meetings = events.map { event in
-            Meeting(
-                id: event.eventIdentifier,
-                title: event.title ?? "Untitled",
-                startDate: event.startDate,
-                endDate: event.endDate,
-                calendarColor: Color(cgColor: event.calendar.cgColor),
-                calendarName: event.calendar.title,
-                meetingURL: extractMeetingURL(from: event)
+            let predicate = eventStore.predicateForEvents(
+                withStart: now,
+                end: endDate,
+                calendars: nil
             )
+
+            let events = eventStore.events(matching: predicate)
+                .filter { !$0.isAllDay }
+                .sorted { $0.startDate < $1.startDate }
+
+            meetings = events.map { event in
+                Meeting(
+                    id: event.eventIdentifier,
+                    title: event.title ?? "Untitled",
+                    startDate: event.startDate,
+                    endDate: event.endDate,
+                    calendarColor: Color(cgColor: event.calendar.cgColor),
+                    calendarName: event.calendar.title,
+                    meetingURL: extractMeetingURL(from: event)
+                )
+            }
+            
+            cleanupAlertedMeetingIds()
+            
+            // Clear error message on success
+            errorMessage = nil
+        } catch {
+            errorMessage = "Failed to fetch meetings: \(error.localizedDescription)"
         }
-        
-        cleanupAlertedMeetingIds()
     }
 
     private func extractMeetingURL(from event: EKEvent) -> URL? {
