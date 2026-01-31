@@ -120,7 +120,14 @@ class CalendarService: ObservableObject {
             #"https?://[\w.-]*zoom\.us/j/[\d\w?=&]+"#,
             #"https?://meet\.google\.com/[\w-]+"#,
             #"https?://teams\.microsoft\.com/l/meetup-join/[\w%/-]+"#,
-            #"https?://[\w.-]+\.webex\.com/[\w/.-]+"#
+            #"https?://[\w.-]+\.webex\.com/[\w/.-]+"#,
+            #"https?://whereby\.com/[\w-]+"#,
+            #"https?://around\.co/[\w-]+"#,
+            #"https?://discord\.gg/[\w-]+"#,
+            #"https?://discord\.com/channels/[\d/]+"#,
+            #"https?://app\.slack\.com/huddle/[\w/-]+"#,
+            #"https?://meet\.jit\.si/[\w-]+"#,
+            #"https?://[\w.-]+\.zoom\.us/j/[\d\w?=&]+"#
         ]
 
         let textsToSearch = [
