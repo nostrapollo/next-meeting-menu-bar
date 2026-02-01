@@ -29,6 +29,8 @@ brew install --cask next-meeting
 ### Direct Download
 [**Download Latest Release →**](https://github.com/nostrapollo/next-meeting-menu-bar/releases/latest)
 
+> ⚠️ **First launch:** macOS will show a security warning — see [Installing Unsigned Apps](#installing-unsigned-apps) below.
+
 ### Build from Source
 ```bash
 git clone https://github.com/nostrapollo/next-meeting-menu-bar.git
@@ -113,6 +115,38 @@ Optional popup notifications when meetings start — configurable for at-start, 
 
 ### Meeting URL not detected?
 NextMeeting looks for URLs in event titles, notes, location, and URL fields. If your meeting link isn't being found, [open an issue](https://github.com/nostrapollo/next-meeting-menu-bar/issues) with the meeting platform and we'll add support.
+
+## Installing Unsigned Apps
+
+When you first open NextMeeting, macOS will show a warning: *"NextMeeting can't be opened because Apple cannot check it for malicious software."*
+
+**This is normal for independent open source apps.**
+
+### Why isn't it signed?
+
+Apple charges $99/year for a Developer ID certificate required to sign macOS apps. NextMeeting is a free, open source project built by an independent developer — paying Apple $99/year to distribute a free app doesn't make sense.
+
+The app is completely safe. You can [audit every line of code](https://github.com/nostrapollo/next-meeting-menu-bar) yourself.
+
+### How to open it anyway
+
+**Option 1: Right-click to open (easiest)**
+1. Right-click (or Control-click) on NextMeeting.app
+2. Select "Open" from the menu
+3. Click "Open" in the dialog that appears
+
+You only need to do this once. After that, it opens normally.
+
+**Option 2: System Settings**
+1. Try to open the app normally (it will be blocked)
+2. Go to System Settings → Privacy & Security
+3. Scroll down — you'll see "NextMeeting was blocked"
+4. Click "Open Anyway"
+
+**Option 3: Terminal (for power users)**
+```bash
+xattr -cr /Applications/NextMeeting.app
+```
 
 ## Contributing
 
