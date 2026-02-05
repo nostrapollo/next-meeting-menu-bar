@@ -14,6 +14,10 @@
 		A1000005 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000015 /* Assets.xcassets */; };
 		A1000006 /* MeetingAlertWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000030 /* MeetingAlertWindow.swift */; };
 		A1000040 /* LaunchAtLoginService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000031 /* LaunchAtLoginService.swift */; };
+		A1000042 /* PreferencesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000032 /* PreferencesService.swift */; };
+		A1000043 /* KeyboardShortcutService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000033 /* KeyboardShortcutService.swift */; };
+		A1000044 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000034 /* SettingsView.swift */; };
+		A1000045 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000035 /* SettingsWindowController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +31,10 @@
 		A1000017 /* NextMeeting.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NextMeeting.entitlements; sourceTree = "<group>"; };
 		A1000030 /* MeetingAlertWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingAlertWindow.swift; sourceTree = "<group>"; };
 		A1000031 /* LaunchAtLoginService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginService.swift; sourceTree = "<group>"; };
+		A1000032 /* PreferencesService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesService.swift; sourceTree = "<group>"; };
+		A1000033 /* KeyboardShortcutService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutService.swift; sourceTree = "<group>"; };
+		A1000034 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A1000035 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,6 +91,8 @@
 			children = (
 				A1000013 /* CalendarService.swift */,
 				A1000031 /* LaunchAtLoginService.swift */,
+				A1000032 /* PreferencesService.swift */,
+				A1000033 /* KeyboardShortcutService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -92,6 +102,8 @@
 			children = (
 				A1000014 /* MenuContentView.swift */,
 				A1000030 /* MeetingAlertWindow.swift */,
+				A1000034 /* SettingsView.swift */,
+				A1000035 /* SettingsWindowController.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -171,6 +183,10 @@
 				A1000004 /* MenuContentView.swift in Sources */,
 				A1000006 /* MeetingAlertWindow.swift in Sources */,
 				A1000040 /* LaunchAtLoginService.swift in Sources */,
+				A1000042 /* PreferencesService.swift in Sources */,
+				A1000043 /* KeyboardShortcutService.swift in Sources */,
+				A1000044 /* SettingsView.swift in Sources */,
+				A1000045 /* SettingsWindowController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -230,7 +246,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -287,7 +303,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;

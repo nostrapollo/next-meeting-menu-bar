@@ -6,6 +6,7 @@ class PreferencesService: ObservableObject {
         static let lookaheadHours = "lookaheadHours"
         static let refreshIntervalSeconds = "refreshIntervalSeconds"
         static let alertMinutesBefore = "alertMinutesBefore"
+        static let excludedCalendarIDs = "excludedCalendarIDs"
     }
     
     @Published var lookaheadHours: Int {
@@ -25,6 +26,12 @@ class PreferencesService: ObservableObject {
             UserDefaults.standard.set(alertMinutesBefore, forKey: Keys.alertMinutesBefore)
         }
     }
+
+    @Published var excludedCalendarIDs: Set<String> {
+        didSet {
+            UserDefaults.standard.set(Array(excludedCalendarIDs), forKey: Keys.excludedCalendarIDs)
+        }
+    }
     
     init() {
         // Load from UserDefaults with default values
@@ -40,5 +47,8 @@ class PreferencesService: ObservableObject {
         } else {
             self.alertMinutesBefore = 0
         }
+
+        let savedExcluded = UserDefaults.standard.stringArray(forKey: Keys.excludedCalendarIDs) ?? []
+        self.excludedCalendarIDs = Set(savedExcluded)
     }
 }

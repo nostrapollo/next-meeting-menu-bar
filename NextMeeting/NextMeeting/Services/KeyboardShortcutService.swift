@@ -143,7 +143,12 @@ class KeyboardShortcutService: ObservableObject {
     }
     
     deinit {
-        unregisterHotkey()
+        if let hotKeyRef = hotKeyRef {
+            UnregisterEventHotKey(hotKeyRef)
+        }
+        if let eventHandler = eventHandler {
+            RemoveEventHandler(eventHandler)
+        }
     }
     
     // Helper to get human-readable shortcut string

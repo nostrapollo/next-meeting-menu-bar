@@ -1,6 +1,13 @@
 import EventKit
 import SwiftUI
 
+struct CalendarInfo: Identifiable, Hashable {
+    let id: String
+    let title: String
+    let color: Color
+    let source: String
+}
+
 @MainActor
 class CalendarService: ObservableObject {
     private let eventStore = EKEventStore()
@@ -10,6 +17,7 @@ class CalendarService: ObservableObject {
     @Published var meetings: [Meeting] = []
     @Published var hasAccess: Bool = false
     @Published var errorMessage: String?
+    @Published var availableCalendars: [CalendarInfo] = []
     @Published var fullScreenAlertsEnabled: Bool {
         didSet {
             UserDefaults.standard.set(fullScreenAlertsEnabled, forKey: "fullScreenAlertsEnabled")
@@ -102,6 +110,19 @@ class CalendarService: ObservableObject {
         }
     }
 
+    func loadAvailableCalendars() {
+        guard hasAccess else { return }
+        let ekCalendars = eventStore.calendars(for: .event)
+        availableCalendars = ekCalendars.map { cal in
+            CalendarInfo(
+                id: cal.calendarIdentifier,
+                title: cal.title,
+                color: Color(cgColor: cal.cgColor),
+                source: cal.source.title
+            )
+        }.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+    }
+
     func fetchUpcomingMeetings() {
         guard hasAccess else { return }
 
@@ -110,10 +131,13 @@ class CalendarService: ObservableObject {
             let lookaheadHours = preferencesService?.lookaheadHours ?? 24
             let endDate = Calendar.current.date(byAdding: .hour, value: lookaheadHours, to: now)!
 
+            let excludedIDs = preferencesService?.excludedCalendarIDs ?? []
+            let calendars: [EKCalendar]? = excludedIDs.isEmpty ? nil : eventStore.calendars(for: .event).filter { !excludedIDs.contains($0.calendarIdentifier) }
+
             let predicate = eventStore.predicateForEvents(
                 withStart: now,
                 end: endDate,
-                calendars: nil
+                calendars: calendars
             )
 
             let events = eventStore.events(matching: predicate)

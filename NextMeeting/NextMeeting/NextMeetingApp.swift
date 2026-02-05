@@ -8,6 +8,7 @@ struct NextMeetingApp: App {
     @StateObject private var launchAtLoginService = LaunchAtLoginService()
     @StateObject private var keyboardShortcutService = KeyboardShortcutService()
     @State private var refreshTimer: Timer?
+    @State private var hasInitialized = false
     private let alertController = MeetingAlertWindowController()
 
     var body: some Scene {
@@ -18,6 +19,16 @@ struct NextMeetingApp: App {
                 preferencesService: preferencesService,
                 keyboardShortcutService: keyboardShortcutService
             )
+            .onAppear {
+                guard !hasInitialized else { return }
+                hasInitialized = true
+                calendarService.setPreferencesService(preferencesService)
+                setupKeyboardShortcut()
+                requestNotificationPermissions()
+                if calendarService.hasAccess {
+                    startRefreshTimer()
+                }
+            }
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: "calendar")
@@ -25,26 +36,26 @@ struct NextMeetingApp: App {
             }
         }
         .menuBarExtraStyle(.window)
-        .onChange(of: calendarService.hasAccess) { newValue in
+        .onChange(of: calendarService.hasAccess) { _, newValue in
             if newValue {
                 calendarService.setPreferencesService(preferencesService)
                 startRefreshTimer()
             }
         }
-        .onChange(of: preferencesService.refreshIntervalSeconds) { _ in
+        .onChange(of: preferencesService.refreshIntervalSeconds) { _, _ in
             if calendarService.hasAccess {
                 startRefreshTimer()
             }
         }
-        .onChange(of: calendarService.meetingToAlert?.id) { meetingId in
+        .onChange(of: preferencesService.excludedCalendarIDs) { _, _ in
+            if calendarService.hasAccess {
+                calendarService.fetchUpcomingMeetings()
+            }
+        }
+        .onChange(of: calendarService.meetingToAlert?.id) { _, _ in
             if let meeting = calendarService.meetingToAlert {
                 showAlert(for: meeting)
             }
-        }
-        .onAppear {
-            calendarService.setPreferencesService(preferencesService)
-            setupKeyboardShortcut()
-            requestNotificationPermissions()
         }
     }
 
