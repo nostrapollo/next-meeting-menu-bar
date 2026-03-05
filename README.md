@@ -5,7 +5,7 @@
 [![macOS 13+](https://img.shields.io/badge/macOS-13.0%2B-blue?logo=apple)](https://www.apple.com/macos/)
 [![Swift 5.9](https://img.shields.io/badge/Swift-5.9-F05138?logo=swift&logoColor=white)](https://swift.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/nostrapollo/next-meeting-menu-bar?style=social)](https://github.com/nostrapollo/next-meeting-menu-bar/stargazers)
+
 
 <!-- TODO: Add hero image/GIF showing menu bar + dropdown -->
 <!-- <p align="center">
