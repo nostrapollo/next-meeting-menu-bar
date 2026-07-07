@@ -1,158 +1,125 @@
-import XCTest
-@testable import NextMeeting
+import Foundation
 
-final class URLExtractionTests: XCTestCase {
-    
-    // MARK: - Zoom URL Tests
-    
-    func testExtractsZoomURL() {
-        let text = "Join us at https://zoom.us/j/123456789?pwd=abc123"
-        let url = extractURL(from: text)
-        XCTAssertNotNil(url)
-        XCTAssertTrue(url?.absoluteString.contains("zoom.us") ?? false)
+/// These exercise the real `MeetingURLExtractor` used by the app — not a copy
+/// of its patterns — so a regex change that breaks extraction fails here.
+func runURLExtractionTests() {
+    print("MeetingURLExtractor")
+
+    func extracted(_ text: String) -> String? {
+        MeetingURLExtractor.extractURL(from: [text])?.absoluteString
     }
-    
-    func testExtractsZoomVanityURL() {
-        let text = "Meeting link: https://company.zoom.us/j/987654321"
-        let url = extractURL(from: text)
-        XCTAssertNotNil(url)
-        XCTAssertTrue(url?.absoluteString.contains("zoom.us") ?? false)
+
+    // MARK: Zoom
+
+    TestRunner.test("extracts Zoom URL with password") {
+        TestRunner.expectEqual(
+            extracted("Join us at https://zoom.us/j/123456789?pwd=abc123"),
+            "https://zoom.us/j/123456789?pwd=abc123"
+        )
     }
-    
-    // MARK: - Google Meet Tests
-    
-    func testExtractsGoogleMeetURL() {
-        let text = "Join: https://meet.google.com/abc-defg-hij"
-        let url = extractURL(from: text)
-        XCTAssertNotNil(url)
-        XCTAssertTrue(url?.absoluteString.contains("meet.google.com") ?? false)
+
+    TestRunner.test("extracts Zoom vanity URL") {
+        TestRunner.expectEqual(
+            extracted("Meeting link: https://company.zoom.us/j/987654321"),
+            "https://company.zoom.us/j/987654321"
+        )
     }
-    
-    // MARK: - Microsoft Teams Tests
-    
-    func testExtractsTeamsURL() {
-        let text = "Teams meeting: https://teams.microsoft.com/l/meetup-join/abc123%2Fdef456"
-        let url = extractURL(from: text)
-        XCTAssertNotNil(url)
-        XCTAssertTrue(url?.absoluteString.contains("teams.microsoft.com") ?? false)
+
+    TestRunner.test("keeps dots and dashes in Zoom pwd tokens") {
+        TestRunner.expectEqual(
+            extracted("https://zoom.us/j/123?pwd=abc.def-ghi"),
+            "https://zoom.us/j/123?pwd=abc.def-ghi"
+        )
     }
-    
-    // MARK: - WebEx Tests
-    
-    func testExtractsWebExURL() {
-        let text = "WebEx: https://company.webex.com/meet/john.doe"
-        let url = extractURL(from: text)
-        XCTAssertNotNil(url)
-        XCTAssertTrue(url?.absoluteString.contains("webex.com") ?? false)
+
+    // MARK: Google Meet
+
+    TestRunner.test("extracts Google Meet URL") {
+        TestRunner.expectEqual(
+            extracted("Join: https://meet.google.com/abc-defg-hij"),
+            "https://meet.google.com/abc-defg-hij"
+        )
     }
-    
-    // MARK: - Whereby Tests
-    
-    func testExtractsWherebyURL() {
-        let text = "Let's meet at https://whereby.com/my-room"
-        let url = extractURL(from: text)
-        XCTAssertNotNil(url)
-        XCTAssertTrue(url?.absoluteString.contains("whereby.com") ?? false)
+
+    // MARK: Microsoft Teams
+
+    TestRunner.test("keeps the context query on Teams URLs") {
+        let link = "https://teams.microsoft.com/l/meetup-join/19%3ameeting_ABC%40thread.v2/0?context=%7b%22Tid%22%3a%22x%22%7d"
+        TestRunner.expectEqual(extracted("Teams meeting: \(link)"), link)
     }
-    
-    // MARK: - Around Tests
-    
-    func testExtractsAroundURL() {
-        let text = "Around room: https://around.co/r/team-standup"
-        let url = extractURL(from: text)
-        XCTAssertNotNil(url)
-        XCTAssertTrue(url?.absoluteString.contains("around.co") ?? false)
+
+    // MARK: Other providers
+
+    TestRunner.test("extracts WebEx URL") {
+        TestRunner.expectEqual(
+            extracted("WebEx: https://company.webex.com/meet/john.doe"),
+            "https://company.webex.com/meet/john.doe"
+        )
     }
-    
-    // MARK: - Discord Tests
-    
-    func testExtractsDiscordInviteURL() {
-        let text = "Discord: https://discord.gg/abc123"
-        let url = extractURL(from: text)
-        XCTAssertNotNil(url)
-        XCTAssertTrue(url?.absoluteString.contains("discord.gg") ?? false)
+
+    TestRunner.test("extracts Whereby URL") {
+        TestRunner.expectEqual(
+            extracted("Let's meet at https://whereby.com/my-room"),
+            "https://whereby.com/my-room"
+        )
     }
-    
-    func testExtractsDiscordChannelURL() {
-        let text = "Channel: https://discord.com/channels/123456/789012"
-        let url = extractURL(from: text)
-        XCTAssertNotNil(url)
-        XCTAssertTrue(url?.absoluteString.contains("discord.com") ?? false)
+
+    TestRunner.test("extracts full Around URL path") {
+        // Regression: the old pattern stopped at the first path segment,
+        // truncating this to https://around.co/r
+        TestRunner.expectEqual(
+            extracted("Around room: https://around.co/r/team-standup"),
+            "https://around.co/r/team-standup"
+        )
     }
-    
-    // MARK: - Slack Huddle Tests
-    
-    func testExtractsSlackHuddleURL() {
-        let text = "Huddle: https://app.slack.com/huddle/T123/C456"
-        let url = extractURL(from: text)
-        XCTAssertNotNil(url)
-        XCTAssertTrue(url?.absoluteString.contains("slack.com/huddle") ?? false)
+
+    TestRunner.test("extracts Discord invite URL") {
+        TestRunner.expectEqual(
+            extracted("Discord: https://discord.gg/abc123"),
+            "https://discord.gg/abc123"
+        )
     }
-    
-    // MARK: - Jitsi Tests
-    
-    func testExtractsJitsiURL() {
-        let text = "Jitsi Meet: https://meet.jit.si/MyMeetingRoom"
-        let url = extractURL(from: text)
-        XCTAssertNotNil(url)
-        XCTAssertTrue(url?.absoluteString.contains("meet.jit.si") ?? false)
+
+    TestRunner.test("extracts Discord channel URL") {
+        TestRunner.expectEqual(
+            extracted("Channel: https://discord.com/channels/123456/789012"),
+            "https://discord.com/channels/123456/789012"
+        )
     }
-    
-    // MARK: - Edge Cases
-    
-    func testReturnsNilForNoURL() {
-        let text = "This is just a regular meeting description with no links"
-        let url = extractURL(from: text)
-        XCTAssertNil(url)
+
+    TestRunner.test("extracts Slack huddle URL") {
+        TestRunner.expectEqual(
+            extracted("Huddle: https://app.slack.com/huddle/T123/C456"),
+            "https://app.slack.com/huddle/T123/C456"
+        )
     }
-    
-    func testExtractsFirstMatchingURL() {
-        let text = "Primary: https://zoom.us/j/111 Backup: https://meet.google.com/xyz"
-        let url = extractURL(from: text)
-        XCTAssertNotNil(url)
-        // Should extract the first matching URL
-        XCTAssertTrue(url?.absoluteString.contains("zoom.us") ?? false)
+
+    TestRunner.test("extracts Jitsi URL") {
+        TestRunner.expectEqual(
+            extracted("Jitsi Meet: https://meet.jit.si/MyMeetingRoom"),
+            "https://meet.jit.si/MyMeetingRoom"
+        )
     }
-    
-    // MARK: - Helper
-    
-    /// Simulates the URL extraction logic from CalendarService
-    private func extractURL(from text: String) -> URL? {
-        let patterns = [
-            #"https?://[\w.-]*zoom\.us/j/[\d\w?=&]+"#,
-            #"https?://meet\.google\.com/[\w-]+"#,
-            #"https?://teams\.microsoft\.com/l/meetup-join/[\w%/-]+"#,
-            #"https?://[\w.-]+\.webex\.com/[\w/.-]+"#,
-            #"https?://whereby\.com/[\w-]+"#,
-            #"https?://around\.co/[\w/-]+"#,
-            #"https?://discord\.gg/[\w]+"#,
-            #"https?://discord\.com/channels/[\d/]+"#,
-            #"https?://app\.slack\.com/huddle/[\w/]+"#,
-            #"https?://meet\.jit\.si/[\w-]+"#
-        ]
-        
-        for pattern in patterns {
-            if let url = findURL(matching: pattern, in: text) {
-                return url
-            }
-        }
-        
-        return nil
+
+    // MARK: Edge cases
+
+    TestRunner.test("returns nil when no URL present") {
+        TestRunner.expect(extracted("This is just a regular meeting description with no links") == nil)
     }
-    
-    private func findURL(matching pattern: String, in text: String) -> URL? {
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
-            return nil
-        }
-        
-        let range = NSRange(text.startIndex..., in: text)
-        if let match = regex.firstMatch(in: text, options: [], range: range) {
-            if let matchRange = Range(match.range, in: text) {
-                let urlString = String(text[matchRange])
-                return URL(string: urlString)
-            }
-        }
-        
-        return nil
+
+    TestRunner.test("first matching URL wins within a text") {
+        TestRunner.expectEqual(
+            extracted("Primary: https://zoom.us/j/111 Backup: https://meet.google.com/xyz"),
+            "https://zoom.us/j/111"
+        )
+    }
+
+    TestRunner.test("searches multiple texts in order") {
+        let url = MeetingURLExtractor.extractURL(from: [
+            nil,
+            "Conference Room 4",
+            "Video: https://meet.google.com/abc-defg-hij"
+        ])
+        TestRunner.expectEqual(url?.absoluteString, "https://meet.google.com/abc-defg-hij")
     }
 }

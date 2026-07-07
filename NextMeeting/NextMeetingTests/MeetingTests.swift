@@ -1,133 +1,126 @@
-import XCTest
+import Foundation
 import SwiftUI
-@testable import NextMeeting
 
-final class MeetingTests: XCTestCase {
-    
-    // MARK: - Countdown String Tests
-    
-    func testCountdownString_whenMeetingIsNow_returnsNow() {
-        let meeting = createMeeting(
-            startDate: Date().addingTimeInterval(-30),  // Started 30 seconds ago
-            endDate: Date().addingTimeInterval(1800)    // Ends in 30 minutes
-        )
-        XCTAssertEqual(meeting.countdownString, "Now")
-    }
-    
-    func testCountdownString_whenMeetingIsPast_returnsPast() {
-        let meeting = createMeeting(
-            startDate: Date().addingTimeInterval(-7200),  // Started 2 hours ago
-            endDate: Date().addingTimeInterval(-3600)     // Ended 1 hour ago
-        )
-        XCTAssertEqual(meeting.countdownString, "Past")
-    }
-    
-    func testCountdownString_whenMeetingInMinutes_returnsMinutes() {
-        let meeting = createMeeting(
-            startDate: Date().addingTimeInterval(900),   // Starts in 15 minutes
-            endDate: Date().addingTimeInterval(4500)     // Ends in 75 minutes
-        )
-        XCTAssertEqual(meeting.countdownString, "15m")
-    }
-    
-    func testCountdownString_whenMeetingInHours_returnsHoursAndMinutes() {
-        let meeting = createMeeting(
-            startDate: Date().addingTimeInterval(5400),  // Starts in 1.5 hours
-            endDate: Date().addingTimeInterval(9000)
-        )
-        XCTAssertEqual(meeting.countdownString, "1h 30m")
-    }
-    
-    func testCountdownString_whenMeetingInExactHours_returnsHoursOnly() {
-        let meeting = createMeeting(
-            startDate: Date().addingTimeInterval(7200),  // Starts in 2 hours
-            endDate: Date().addingTimeInterval(10800)
-        )
-        XCTAssertEqual(meeting.countdownString, "2h")
-    }
-    
-    func testCountdownString_whenLessThanOneMinute_returnsLessThanOneMinute() {
-        let meeting = createMeeting(
-            startDate: Date().addingTimeInterval(30),    // Starts in 30 seconds
-            endDate: Date().addingTimeInterval(3630)
-        )
-        XCTAssertEqual(meeting.countdownString, "<1m")
-    }
-    
-    // MARK: - isHappeningNow Tests
-    
-    func testIsHappeningNow_whenCurrentlyInMeeting_returnsTrue() {
-        let meeting = createMeeting(
-            startDate: Date().addingTimeInterval(-300),  // Started 5 minutes ago
-            endDate: Date().addingTimeInterval(1500)     // Ends in 25 minutes
-        )
-        XCTAssertTrue(meeting.isHappeningNow)
-    }
-    
-    func testIsHappeningNow_whenMeetingNotStarted_returnsFalse() {
-        let meeting = createMeeting(
-            startDate: Date().addingTimeInterval(300),   // Starts in 5 minutes
-            endDate: Date().addingTimeInterval(3900)
-        )
-        XCTAssertFalse(meeting.isHappeningNow)
-    }
-    
-    func testIsHappeningNow_whenMeetingEnded_returnsFalse() {
-        let meeting = createMeeting(
-            startDate: Date().addingTimeInterval(-3600), // Started 1 hour ago
-            endDate: Date().addingTimeInterval(-300)     // Ended 5 minutes ago
-        )
-        XCTAssertFalse(meeting.isHappeningNow)
-    }
-    
-    // MARK: - isJustStarting Tests
-    
-    func testIsJustStarting_whenWithin60Seconds_returnsTrue() {
-        let meeting = createMeeting(
-            startDate: Date().addingTimeInterval(-30),   // Started 30 seconds ago
-            endDate: Date().addingTimeInterval(3570)
-        )
-        XCTAssertTrue(meeting.isJustStarting)
-    }
-    
-    func testIsJustStarting_whenOver60Seconds_returnsFalse() {
-        let meeting = createMeeting(
-            startDate: Date().addingTimeInterval(-120),  // Started 2 minutes ago
-            endDate: Date().addingTimeInterval(3480)
-        )
-        XCTAssertFalse(meeting.isJustStarting)
-    }
-    
-    // MARK: - Menu Bar Title Tests
-    
-    func testMenuBarTitle_shortTitle_notTruncated() {
-        let meeting = createMeeting(title: "Team Standup")
-        XCTAssertTrue(meeting.menuBarTitle.contains("Team Standup"))
-    }
-    
-    func testMenuBarTitle_longTitle_truncatedWithEllipsis() {
-        let meeting = createMeeting(title: "Very Long Meeting Title That Should Be Truncated")
-        XCTAssertTrue(meeting.menuBarTitle.contains("..."))
-        XCTAssertLessThanOrEqual(meeting.menuBarTitle.count, 30) // countdown + truncated title
-    }
-    
-    // MARK: - Helper
-    
-    private func createMeeting(
+/// All time-dependent behavior is exercised against a fixed reference date so
+/// results don't depend on when the tests run.
+func runMeetingTests() {
+    print("Meeting")
+    let now = Date(timeIntervalSince1970: 1_750_000_000)
+
+    func makeMeeting(
         id: String = "test-id",
         title: String = "Test Meeting",
-        startDate: Date = Date().addingTimeInterval(900),
-        endDate: Date = Date().addingTimeInterval(4500),
+        startOffset: TimeInterval = 900,
+        endOffset: TimeInterval = 4500,
         meetingURL: URL? = nil
     ) -> Meeting {
         Meeting(
             id: id,
             title: title,
-            startDate: startDate,
-            endDate: endDate,
+            startDate: now.addingTimeInterval(startOffset),
+            endDate: now.addingTimeInterval(endOffset),
             calendarColor: .blue,
             calendarName: "Test Calendar",
             meetingURL: meetingURL
         )
+    }
+
+    // MARK: countdownString
+
+    TestRunner.test("countdown is Now during the meeting") {
+        let meeting = makeMeeting(startOffset: -30, endOffset: 1800)
+        TestRunner.expectEqual(meeting.countdownString(at: now), "Now")
+    }
+
+    TestRunner.test("countdown is Past after the meeting ended") {
+        let meeting = makeMeeting(startOffset: -7200, endOffset: -3600)
+        TestRunner.expectEqual(meeting.countdownString(at: now), "Past")
+    }
+
+    TestRunner.test("countdown shows minutes") {
+        let meeting = makeMeeting(startOffset: 900, endOffset: 4500)
+        TestRunner.expectEqual(meeting.countdownString(at: now), "15m")
+    }
+
+    TestRunner.test("countdown shows hours and minutes") {
+        let meeting = makeMeeting(startOffset: 5400, endOffset: 9000)
+        TestRunner.expectEqual(meeting.countdownString(at: now), "1h 30m")
+    }
+
+    TestRunner.test("countdown shows whole hours without minutes") {
+        let meeting = makeMeeting(startOffset: 7200, endOffset: 10800)
+        TestRunner.expectEqual(meeting.countdownString(at: now), "2h")
+    }
+
+    TestRunner.test("countdown shows <1m just before start") {
+        let meeting = makeMeeting(startOffset: 30, endOffset: 3630)
+        TestRunner.expectEqual(meeting.countdownString(at: now), "<1m")
+    }
+
+    // MARK: isHappeningNow
+
+    TestRunner.test("isHappeningNow true mid-meeting") {
+        let meeting = makeMeeting(startOffset: -300, endOffset: 1500)
+        TestRunner.expect(meeting.isHappeningNow(at: now))
+    }
+
+    TestRunner.test("isHappeningNow false before start") {
+        let meeting = makeMeeting(startOffset: 300, endOffset: 3900)
+        TestRunner.expect(!meeting.isHappeningNow(at: now))
+    }
+
+    TestRunner.test("isHappeningNow false after end") {
+        let meeting = makeMeeting(startOffset: -3600, endOffset: -300)
+        TestRunner.expect(!meeting.isHappeningNow(at: now))
+    }
+
+    // MARK: isJustStarting
+
+    TestRunner.test("isJustStarting true within 60s of start") {
+        let meeting = makeMeeting(startOffset: -30, endOffset: 3570)
+        TestRunner.expect(meeting.isJustStarting(at: now))
+    }
+
+    TestRunner.test("isJustStarting false after 60s") {
+        let meeting = makeMeeting(startOffset: -120, endOffset: 3480)
+        TestRunner.expect(!meeting.isJustStarting(at: now))
+    }
+
+    TestRunner.test("isJustStarting false before start") {
+        let meeting = makeMeeting(startOffset: 30, endOffset: 3630)
+        TestRunner.expect(!meeting.isJustStarting(at: now))
+    }
+
+    // MARK: menuBarTitle
+
+    TestRunner.test("short title is not truncated") {
+        let meeting = makeMeeting(title: "Team Standup")
+        TestRunner.expect(meeting.menuBarTitle(at: now).contains("Team Standup"))
+    }
+
+    TestRunner.test("long title is truncated with ellipsis") {
+        let meeting = makeMeeting(title: "Very Long Meeting Title That Should Be Truncated")
+        let title = meeting.menuBarTitle(at: now)
+        TestRunner.expect(title.contains("..."), "expected ellipsis in \(title)")
+        TestRunner.expect(title.count <= 30, "title too long: \(title)")
+    }
+
+    // MARK: makeID
+
+    TestRunner.test("makeID distinguishes occurrences of a recurring event") {
+        let first = Meeting.makeID(eventIdentifier: "recurring-standup", startDate: now)
+        let second = Meeting.makeID(eventIdentifier: "recurring-standup", startDate: now.addingTimeInterval(86400))
+        TestRunner.expect(first != second, "occurrences must not share an id")
+    }
+
+    TestRunner.test("makeID is stable for the same occurrence") {
+        let a = Meeting.makeID(eventIdentifier: "abc", startDate: now)
+        let b = Meeting.makeID(eventIdentifier: "abc", startDate: now)
+        TestRunner.expectEqual(a, b)
+    }
+
+    TestRunner.test("makeID tolerates a nil event identifier") {
+        let id = Meeting.makeID(eventIdentifier: nil, startDate: now)
+        TestRunner.expect(!id.isEmpty)
     }
 }
