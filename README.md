@@ -2,6 +2,8 @@
 
 A macOS menu bar app that shows a live countdown to your next meeting. Press **Cmd+Shift+J** from anywhere to join instantly. No clicking through calendar apps, no hunting for links.
 
+**Website:** [brendanardagh.com/nextmeeting](https://brendanardagh.com/nextmeeting/) · **Build notes:** [architecture & design decisions](https://brendanardagh.com/wiki/nextmeeting-menu-bar/)
+
 NextMeeting reads your local calendars, extracts meeting URLs from event titles, notes, locations, and URL fields, and supports Zoom, Google Meet, Microsoft Teams, WebEx, Whereby, Around, Discord, Slack Huddles, and Jitsi.
 
 ## Quick Start
