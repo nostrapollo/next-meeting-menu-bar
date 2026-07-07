@@ -21,6 +21,14 @@ open NextMeeting/NextMeeting.xcodeproj
 
 On first launch, grant **Calendar access** when prompted. For the global keyboard shortcut, enable **Accessibility** access in System Settings > Privacy & Security > Accessibility.
 
+## Testing
+
+```sh
+./test.sh
+```
+
+Tests build with the Command Line Tools alone (no Xcode required): the pure logic — countdown formatting, meeting URL extraction, and full-screen alert timing — compiles into a small test executable with its own assertion harness. See `NextMeeting/NextMeetingTests/`.
+
 ## Features
 
 | Feature | Details |

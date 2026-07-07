@@ -28,19 +28,21 @@ Config in `.swiftlint.yml`: `line_length` and `trailing_whitespace` are disabled
 
 ## Testing
 
-Test files exist at `NextMeeting/NextMeetingTests/` but the test target is **not registered** in the `.xcodeproj`. Tests cannot be run until a Unit Testing Bundle target is added. If/when added:
-
 ```bash
-xcodebuild test -project NextMeeting/NextMeeting.xcodeproj -scheme NextMeeting -destination 'platform=macOS'
+./test.sh
 ```
+
+Tests run with the Command Line Tools alone — no Xcode or XCTest. `test.sh` compiles the pure-logic sources (`Meeting`, `MeetingURLExtractor`, `MeetingAlertPolicy`) together with `NextMeeting/NextMeetingTests/` (a small assertion harness, `TestHarness.swift`, plus `main.swift` runner) into a plain executable and runs it. Time-dependent tests inject a fixed `now` — never assert against the wall clock. Add new cases to the existing `run*Tests()` functions or register a new one in `main.swift`.
 
 ## Architecture
 
-**Entry point:** `NextMeetingApp.swift` — SwiftUI `@main` App using `MenuBarExtra` with `.window` style. Creates all four services as `@StateObject` and passes them down via `@ObservedObject`.
+**Entry point:** `NextMeetingApp.swift` — SwiftUI `@main` App using `MenuBarExtra` with `.window` style. Creates and wires all four services in `App.init` (NOT in the content view's `.onAppear` — with the `.window` style the content view doesn't exist until the menu is first opened, so onAppear-based setup breaks launch-at-login starts).
 
 **Services (all `@MainActor ObservableObject`):**
 
-- **`CalendarService`** — EventKit integration. Fetches events, extracts meeting URLs via 11 regex patterns (Zoom, Google Meet, Teams, WebEx, Whereby, Around, Discord, Slack Huddle, Jitsi). Has a post-init circular dependency on PreferencesService resolved via `setPreferencesService(_:)`.
+- **`CalendarService`** — EventKit integration; takes `PreferencesService` in its init. Owns two timers: a fetch timer on the configured refresh interval, and a 1-second display timer that publishes `now` (drives live countdown rendering) and evaluates `MeetingAlertPolicy` (so the one-minute alert window can't be skipped by a slow refresh interval). Meeting ids come from `Meeting.makeID` (eventIdentifier + start date — recurring occurrences must not share an id).
+- **`MeetingURLExtractor`** — pure regex-based URL extraction (Zoom, Google Meet, Teams, WebEx, Whereby, Around, Discord, Slack Huddle, Jitsi), no EventKit dependency, unit tested directly. Patterns live ONLY here — never duplicate them in tests.
+- **`MeetingAlertPolicy`** — pure alert-window selection with injectable clock, unit tested directly.
 - **`PreferencesService`** — UserDefaults-backed settings: lookahead hours, refresh interval, alert timing, excluded calendars. Each `@Published` property persists on `didSet`.
 - **`KeyboardShortcutService`** — Carbon framework global hotkey registration (`RegisterEventHotKey`). Requires Accessibility permission.
 - **`LaunchAtLoginService`** — `SMAppService.mainApp` wrapper.
@@ -51,7 +53,7 @@ xcodebuild test -project NextMeeting/NextMeeting.xcodeproj -scheme NextMeeting -
 - **`SettingsView`** — Preferences pickers + calendar exclusion picker. Hosted in `SettingsWindowController` (singleton NSWindow).
 - **`MeetingAlertWindow`** — Full-screen overlay alert at `NSWindow.level = .screenSaver`. Managed by `MeetingAlertWindowController` (plain class, not ObservableObject).
 
-**Model:** `Meeting` struct with computed properties for countdown formatting (`countdownString`, `menuBarTitle`, `isHappeningNow`, `isJustStarting`).
+**Model:** `Meeting` struct with time-parameterized functions for countdown formatting (`countdownString(at:)`, `menuBarTitle(at:)`, `isHappeningNow(at:)`, `isJustStarting(at:)`) plus parameterless convenience properties for views.
 
 ## Key Patterns
 
