@@ -1,15 +1,40 @@
+import AppKit
 import SwiftUI
 import UserNotifications
+import os
 
 @main
 struct NextMeetingApp: App {
-    @StateObject private var preferencesService = PreferencesService()
-    @StateObject private var calendarService = CalendarService()
-    @StateObject private var launchAtLoginService = LaunchAtLoginService()
-    @StateObject private var keyboardShortcutService = KeyboardShortcutService()
-    @State private var refreshTimer: Timer?
-    @State private var hasInitialized = false
+    private static let logger = Logger(subsystem: "com.nextmeeting.app", category: "App")
+
+    @StateObject private var preferencesService: PreferencesService
+    @StateObject private var calendarService: CalendarService
+    @StateObject private var launchAtLoginService: LaunchAtLoginService
+    @StateObject private var keyboardShortcutService: KeyboardShortcutService
     private let alertController = MeetingAlertWindowController()
+
+    // Setup happens here rather than in the menu content's .onAppear: with the
+    // .window MenuBarExtra style the content view isn't created until the menu
+    // is first opened, so onAppear-based setup would leave the app without a
+    // fetch, refresh timer, or hotkey after a launch-at-login start.
+    init() {
+        let preferences = PreferencesService()
+        let calendar = CalendarService(preferencesService: preferences)
+        let launchAtLogin = LaunchAtLoginService()
+        let shortcut = KeyboardShortcutService()
+
+        _preferencesService = StateObject(wrappedValue: preferences)
+        _calendarService = StateObject(wrappedValue: calendar)
+        _launchAtLoginService = StateObject(wrappedValue: launchAtLogin)
+        _keyboardShortcutService = StateObject(wrappedValue: shortcut)
+
+        shortcut.setup { [weak calendar] in
+            guard let calendar else { return }
+            Self.joinNextMeeting(from: calendar)
+        }
+
+        Self.requestNotificationPermissions()
+    }
 
     var body: some Scene {
         MenuBarExtra {
@@ -19,16 +44,6 @@ struct NextMeetingApp: App {
                 preferencesService: preferencesService,
                 keyboardShortcutService: keyboardShortcutService
             )
-            .onAppear {
-                guard !hasInitialized else { return }
-                hasInitialized = true
-                calendarService.setPreferencesService(preferencesService)
-                setupKeyboardShortcut()
-                requestNotificationPermissions()
-                if calendarService.hasAccess {
-                    startRefreshTimer()
-                }
-            }
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: "calendar")
@@ -36,16 +51,8 @@ struct NextMeetingApp: App {
             }
         }
         .menuBarExtraStyle(.window)
-        .onChange(of: calendarService.hasAccess) { _, newValue in
-            if newValue {
-                calendarService.setPreferencesService(preferencesService)
-                startRefreshTimer()
-            }
-        }
         .onChange(of: preferencesService.refreshIntervalSeconds) { _, _ in
-            if calendarService.hasAccess {
-                startRefreshTimer()
-            }
+            calendarService.restartRefreshTimer()
         }
         .onChange(of: preferencesService.excludedCalendarIDs) { _, _ in
             if calendarService.hasAccess {
@@ -64,23 +71,13 @@ struct NextMeetingApp: App {
             return "No Access"
         }
 
-        guard let next = calendarService.nextMeeting else {
+        // Fall back to the in-progress meeting so the title doesn't claim
+        // "No Meetings" while your last meeting of the day is happening.
+        guard let meeting = calendarService.nextMeeting ?? calendarService.currentMeeting else {
             return "No Meetings"
         }
 
-        return next.menuBarTitle
-    }
-
-    private func startRefreshTimer() {
-        refreshTimer?.invalidate()
-        calendarService.fetchUpcomingMeetings()
-
-        let interval = TimeInterval(preferencesService.refreshIntervalSeconds)
-        refreshTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
-            Task { @MainActor in
-                calendarService.fetchUpcomingMeetings()
-            }
-        }
+        return meeting.menuBarTitle(at: calendarService.now)
     }
 
     private func showAlert(for meeting: Meeting) {
@@ -89,87 +86,46 @@ struct NextMeetingApp: App {
             NSWorkspace.shared.open(url)
         }
     }
-    
-    private func setupKeyboardShortcut() {
-        keyboardShortcutService.setup { [self] in
-            handleKeyboardShortcut()
-        }
-    }
-    
-    private func handleKeyboardShortcut() {
-        // Try current meeting first, then next meeting
+
+    @MainActor
+    private static func joinNextMeeting(from calendarService: CalendarService) {
         let meetingToJoin = calendarService.currentMeeting ?? calendarService.nextMeeting
-        
+
         guard let meeting = meetingToJoin else {
-            showNoMeetingNotification()
+            notify(title: "No Meeting to Join", body: "There are no upcoming meetings at this time.")
             return
         }
-        
+
         guard let url = meeting.meetingURL else {
-            showNoMeetingURLNotification(meetingTitle: meeting.title)
+            notify(title: "No Meeting URL", body: "'\(meeting.title)' doesn't have a meeting URL.")
             return
         }
-        
+
         NSWorkspace.shared.open(url)
-        showMeetingJoinedNotification(meetingTitle: meeting.title)
+        notify(title: "Joining Meeting", body: meeting.title)
     }
-    
-    private func requestNotificationPermissions() {
-        let center = UNUserNotificationCenter.current()
-        center.requestAuthorization(options: [.alert, .sound]) { granted, error in
-            if let error = error {
-                print("Notification permission error: \(error)")
+
+    private static func requestNotificationPermissions() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, error in
+            if let error {
+                logger.error("Notification permission error: \(error)")
             }
         }
     }
-    
-    private func showNoMeetingNotification() {
+
+    private static func notify(title: String, body: String) {
         let content = UNMutableNotificationContent()
-        content.title = "No Meeting to Join"
-        content.body = "There are no upcoming meetings at this time."
+        content.title = title
+        content.body = body
         content.sound = .default
-        
+
         let request = UNNotificationRequest(identifier: UUID().uuidString,
-                                           content: content,
-                                           trigger: nil)
-        
+                                            content: content,
+                                            trigger: nil)
+
         UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Failed to show notification: \(error)")
-            }
-        }
-    }
-    
-    private func showNoMeetingURLNotification(meetingTitle: String) {
-        let content = UNMutableNotificationContent()
-        content.title = "No Meeting URL"
-        content.body = "'\(meetingTitle)' doesn't have a meeting URL."
-        content.sound = .default
-        
-        let request = UNNotificationRequest(identifier: UUID().uuidString,
-                                           content: content,
-                                           trigger: nil)
-        
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Failed to show notification: \(error)")
-            }
-        }
-    }
-    
-    private func showMeetingJoinedNotification(meetingTitle: String) {
-        let content = UNMutableNotificationContent()
-        content.title = "Joining Meeting"
-        content.body = meetingTitle
-        content.sound = .default
-        
-        let request = UNNotificationRequest(identifier: UUID().uuidString,
-                                           content: content,
-                                           trigger: nil)
-        
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Failed to show notification: \(error)")
+            if let error {
+                logger.error("Failed to show notification: \(error)")
             }
         }
     }

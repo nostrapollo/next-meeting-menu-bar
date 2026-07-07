@@ -26,26 +26,7 @@ struct MenuContentView: View {
 
     @ViewBuilder
     private var meetingsContent: some View {
-        if let errorMessage = calendarService.errorMessage {
-            VStack(spacing: 12) {
-                Text("Error Loading Meetings")
-                    .font(.headline)
-                    .foregroundColor(.red)
-                
-                Text(errorMessage)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 8)
-                
-                Button("Retry") {
-                    calendarService.fetchUpcomingMeetings()
-                }
-                .buttonStyle(.borderedProminent)
-            }
-            .padding()
-            .frame(maxWidth: .infinity)
-        } else if calendarService.meetings.isEmpty {
+        if calendarService.meetings.isEmpty {
             Text("No upcoming meetings")
                 .foregroundColor(.secondary)
                 .padding(.horizontal, 12)

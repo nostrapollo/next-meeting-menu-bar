@@ -10,27 +10,41 @@ struct Meeting: Identifiable {
     let calendarName: String
     let meetingURL: URL?
 
-    var isHappeningNow: Bool {
-        let now = Date()
-        return now >= startDate && now <= endDate
+    /// Occurrences of a recurring event share one `eventIdentifier`, and some
+    /// events (e.g. unsynced Exchange invites) have none at all — combine with
+    /// the start date so every occurrence gets a distinct, stable id.
+    static func makeID(eventIdentifier: String?, startDate: Date) -> String {
+        "\(eventIdentifier ?? "no-identifier")-\(startDate.timeIntervalSince1970)"
     }
 
-    var isJustStarting: Bool {
-        let now = Date()
+    private static let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter
+    }()
+
+    var timeString: String {
+        Self.timeFormatter.string(from: startDate)
+    }
+
+    // Time-dependent checks take an explicit `now` so they are deterministic
+    // in tests; the parameterless properties are conveniences for views.
+
+    func isHappeningNow(at now: Date = Date()) -> Bool {
+        now >= startDate && now <= endDate
+    }
+
+    var isHappeningNow: Bool { isHappeningNow() }
+
+    func isJustStarting(at now: Date = Date()) -> Bool {
         let secondsSinceStart = now.timeIntervalSince(startDate)
         return secondsSinceStart >= 0 && secondsSinceStart <= 60
     }
 
-    var timeString: String {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        return formatter.string(from: startDate)
-    }
+    var isJustStarting: Bool { isJustStarting() }
 
-    var countdownString: String {
-        let now = Date()
-
-        if isHappeningNow {
+    func countdownString(at now: Date = Date()) -> String {
+        if isHappeningNow(at: now) {
             return "Now"
         }
 
@@ -58,8 +72,12 @@ struct Meeting: Identifiable {
         return "\(minutes)m"
     }
 
-    var menuBarTitle: String {
+    var countdownString: String { countdownString() }
+
+    func menuBarTitle(at now: Date = Date()) -> String {
         let truncatedTitle = title.count > 20 ? String(title.prefix(17)) + "..." : title
-        return "\(countdownString): \(truncatedTitle)"
+        return "\(countdownString(at: now)): \(truncatedTitle)"
     }
+
+    var menuBarTitle: String { menuBarTitle() }
 }

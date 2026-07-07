@@ -1,9 +1,12 @@
 import Cocoa
 import Carbon
 import SwiftUI
+import os
 
 @MainActor
 class KeyboardShortcutService: ObservableObject {
+    private static let logger = Logger(subsystem: "com.nextmeeting.app", category: "KeyboardShortcut")
+
     private enum Keys {
         static let shortcutEnabled = "keyboardShortcutEnabled"
         static let shortcutKeyCode = "keyboardShortcutKeyCode"
@@ -21,9 +24,11 @@ class KeyboardShortcutService: ObservableObject {
         }
     }
     
-    private var hotKeyRef: EventHotKeyRef?
+    // nonisolated(unsafe): touched from deinit, which is nonisolated under
+    // strict concurrency. Safe because all real access happens on the main actor.
+    nonisolated(unsafe) private var hotKeyRef: EventHotKeyRef?
     private var hotKeyID = EventHotKeyID(signature: 0x4A4D4E4D, id: 1) // JMNM = Join Meeting Next Meeting
-    private var eventHandler: EventHandlerRef?
+    nonisolated(unsafe) private var eventHandler: EventHandlerRef?
     private var onTrigger: (() -> Void)?
     
     // Default: Command+Shift+J
@@ -124,9 +129,9 @@ class KeyboardShortcutService: ObservableObject {
         
         if status == noErr {
             hotKeyRef = hotKeyRefTemp
-            print("✓ Global keyboard shortcut registered: ⌘⇧J")
+            Self.logger.info("Global keyboard shortcut registered: \(self.shortcutDisplayString)")
         } else {
-            print("✗ Failed to register global keyboard shortcut: \(status)")
+            Self.logger.error("Failed to register global keyboard shortcut: \(status)")
         }
     }
     

@@ -1,5 +1,6 @@
 import EventKit
 import SwiftUI
+import os
 
 struct CalendarInfo: Identifiable, Hashable {
     let id: String
@@ -10,72 +11,47 @@ struct CalendarInfo: Identifiable, Hashable {
 
 @MainActor
 class CalendarService: ObservableObject {
+    private static let logger = Logger(subsystem: "com.nextmeeting.app", category: "CalendarService")
+
     private let eventStore = EKEventStore()
+    private let preferencesService: PreferencesService
     private var alertedMeetingIds: Set<String> = []
-    private var preferencesService: PreferencesService?
+    private var refreshTimer: Timer?
+    private var displayTimer: Timer?
 
     @Published var meetings: [Meeting] = []
     @Published var hasAccess: Bool = false
-    @Published var errorMessage: String?
     @Published var availableCalendars: [CalendarInfo] = []
+
+    /// Ticks every second while timers run; drives live countdown rendering.
+    @Published private(set) var now: Date = Date()
+
+    /// Set on the display tick when a meeting enters its alert window.
+    /// Evaluated every second (not on the slower fetch cadence) so the
+    /// one-minute alert window can't be skipped by a long refresh interval.
+    @Published private(set) var meetingToAlert: Meeting?
+
     @Published var fullScreenAlertsEnabled: Bool {
         didSet {
             UserDefaults.standard.set(fullScreenAlertsEnabled, forKey: "fullScreenAlertsEnabled")
         }
     }
-    
-    func setPreferencesService(_ service: PreferencesService) {
-        self.preferencesService = service
-    }
-
-    var meetingToAlert: Meeting? {
-        guard fullScreenAlertsEnabled else { return nil }
-        
-        let alertMinutes = preferencesService?.alertMinutesBefore ?? 0
-        
-        guard let meeting = meetings.first(where: { meeting in
-            if alertedMeetingIds.contains(meeting.id) {
-                return false
-            }
-            
-            let now = Date()
-            let secondsUntilStart = meeting.startDate.timeIntervalSince(now)
-            let minutesUntilStart = secondsUntilStart / 60
-            
-            // Alert if we're within the specified minutes before start
-            if alertMinutes == 0 {
-                // At start: within 0 to 60 seconds after start
-                return meeting.isJustStarting
-            } else {
-                // Before start: check if we're within the alert window (e.g., 1-2 minutes before for 1 minute setting)
-                return minutesUntilStart >= Double(alertMinutes - 1) && minutesUntilStart <= Double(alertMinutes)
-            }
-        }) else {
-            return nil
-        }
-        return meeting
-    }
-
-    func markMeetingAlerted(_ meeting: Meeting) {
-        alertedMeetingIds.insert(meeting.id)
-    }
-    
-    private func cleanupAlertedMeetingIds() {
-        let currentMeetingIds = Set(meetings.map { $0.id })
-        alertedMeetingIds = alertedMeetingIds.intersection(currentMeetingIds)
-    }
 
     var currentMeeting: Meeting? {
-        meetings.first { $0.isHappeningNow }
+        meetings.first { $0.isHappeningNow(at: now) }
     }
 
     var nextMeeting: Meeting? {
-        meetings.first { !$0.isHappeningNow }
+        meetings.first { !$0.isHappeningNow(at: now) }
     }
 
-    init() {
+    init(preferencesService: PreferencesService) {
+        self.preferencesService = preferencesService
         self.fullScreenAlertsEnabled = UserDefaults.standard.bool(forKey: "fullScreenAlertsEnabled")
         checkAuthorizationStatus()
+        if hasAccess {
+            startTimers()
+        }
     }
 
     func checkAuthorizationStatus() {
@@ -93,22 +69,96 @@ class CalendarService: ObservableObject {
                 let granted = try await eventStore.requestFullAccessToEvents()
                 hasAccess = granted
                 if granted {
-                    fetchUpcomingMeetings()
+                    startTimers()
                 }
             } catch {
-                print("Failed to request calendar access: \(error)")
+                Self.logger.error("Failed to request calendar access: \(error)")
             }
         } else {
-            eventStore.requestAccess(to: .event) { [weak self] granted, error in
+            eventStore.requestAccess(to: .event) { [weak self] granted, _ in
                 Task { @MainActor in
                     self?.hasAccess = granted
                     if granted {
-                        self?.fetchUpcomingMeetings()
+                        self?.startTimers()
                     }
                 }
             }
         }
     }
+
+    // MARK: - Timers
+
+    /// Fetches immediately, then refetches on the configured interval and
+    /// re-renders/checks alerts every second.
+    func startTimers() {
+        startRefreshTimer()
+        startDisplayTimer()
+    }
+
+    /// Call when the refresh-interval preference changes.
+    func restartRefreshTimer() {
+        guard hasAccess else { return }
+        startRefreshTimer()
+    }
+
+    private func startRefreshTimer() {
+        refreshTimer?.invalidate()
+        fetchUpcomingMeetings()
+
+        let interval = TimeInterval(preferencesService.refreshIntervalSeconds)
+        let timer = Timer(timeInterval: interval, repeats: true) { _ in
+            Task { @MainActor [weak self] in
+                self?.fetchUpcomingMeetings()
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        refreshTimer = timer
+    }
+
+    private func startDisplayTimer() {
+        guard displayTimer == nil else { return }
+        let timer = Timer(timeInterval: 1, repeats: true) { _ in
+            Task { @MainActor [weak self] in
+                self?.displayTick()
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        displayTimer = timer
+    }
+
+    private func displayTick() {
+        now = Date()
+
+        let candidate: Meeting?
+        if fullScreenAlertsEnabled {
+            candidate = MeetingAlertPolicy.meetingToAlert(
+                in: meetings,
+                alertedIDs: alertedMeetingIds,
+                alertMinutesBefore: preferencesService.alertMinutesBefore,
+                now: now
+            )
+        } else {
+            candidate = nil
+        }
+
+        if meetingToAlert?.id != candidate?.id {
+            meetingToAlert = candidate
+        }
+    }
+
+    func markMeetingAlerted(_ meeting: Meeting) {
+        alertedMeetingIds.insert(meeting.id)
+        if meetingToAlert?.id == meeting.id {
+            meetingToAlert = nil
+        }
+    }
+
+    private func cleanupAlertedMeetingIds() {
+        let currentMeetingIds = Set(meetings.map { $0.id })
+        alertedMeetingIds = alertedMeetingIds.intersection(currentMeetingIds)
+    }
+
+    // MARK: - Fetching
 
     func loadAvailableCalendars() {
         guard hasAccess else { return }
@@ -126,94 +176,47 @@ class CalendarService: ObservableObject {
     func fetchUpcomingMeetings() {
         guard hasAccess else { return }
 
-        do {
-            let now = Date()
-            let lookaheadHours = preferencesService?.lookaheadHours ?? 24
-            let endDate = Calendar.current.date(byAdding: .hour, value: lookaheadHours, to: now)!
-
-            let excludedIDs = preferencesService?.excludedCalendarIDs ?? []
-            let calendars: [EKCalendar]? = excludedIDs.isEmpty ? nil : eventStore.calendars(for: .event).filter { !excludedIDs.contains($0.calendarIdentifier) }
-
-            let predicate = eventStore.predicateForEvents(
-                withStart: now,
-                end: endDate,
-                calendars: calendars
-            )
-
-            let events = eventStore.events(matching: predicate)
-                .filter { !$0.isAllDay }
-                .sorted { $0.startDate < $1.startDate }
-
-            meetings = events.map { event in
-                Meeting(
-                    id: event.eventIdentifier,
-                    title: event.title ?? "Untitled",
-                    startDate: event.startDate,
-                    endDate: event.endDate,
-                    calendarColor: Color(cgColor: event.calendar.cgColor),
-                    calendarName: event.calendar.title,
-                    meetingURL: extractMeetingURL(from: event)
-                )
-            }
-            
-            cleanupAlertedMeetingIds()
-            
-            // Clear error message on success
-            errorMessage = nil
-        } catch {
-            errorMessage = "Failed to fetch meetings: \(error.localizedDescription)"
+        let now = Date()
+        guard let endDate = Calendar.current.date(byAdding: .hour, value: preferencesService.lookaheadHours, to: now) else {
+            return
         }
+
+        let excludedIDs = preferencesService.excludedCalendarIDs
+        let calendars: [EKCalendar]? = excludedIDs.isEmpty
+            ? nil
+            : eventStore.calendars(for: .event).filter { !excludedIDs.contains($0.calendarIdentifier) }
+
+        let predicate = eventStore.predicateForEvents(
+            withStart: now,
+            end: endDate,
+            calendars: calendars
+        )
+
+        let events = eventStore.events(matching: predicate)
+            .filter { !$0.isAllDay }
+            .sorted { $0.startDate < $1.startDate }
+
+        meetings = events.map { event in
+            Meeting(
+                id: Meeting.makeID(eventIdentifier: event.eventIdentifier, startDate: event.startDate),
+                title: event.title ?? "Untitled",
+                startDate: event.startDate,
+                endDate: event.endDate,
+                calendarColor: Color(cgColor: event.calendar.cgColor),
+                calendarName: event.calendar.title,
+                meetingURL: extractMeetingURL(from: event)
+            )
+        }
+
+        cleanupAlertedMeetingIds()
     }
 
     private func extractMeetingURL(from event: EKEvent) -> URL? {
-        let patterns = [
-            #"https?://[\w.-]*zoom\.us/j/[\d\w?=&]+"#,
-            #"https?://meet\.google\.com/[\w-]+"#,
-            #"https?://teams\.microsoft\.com/l/meetup-join/[\w%/-]+"#,
-            #"https?://[\w.-]+\.webex\.com/[\w/.-]+"#,
-            #"https?://whereby\.com/[\w-]+"#,
-            #"https?://around\.co/[\w-]+"#,
-            #"https?://discord\.gg/[\w-]+"#,
-            #"https?://discord\.com/channels/[\d/]+"#,
-            #"https?://app\.slack\.com/huddle/[\w/-]+"#,
-            #"https?://meet\.jit\.si/[\w-]+"#,
-            #"https?://[\w.-]+\.zoom\.us/j/[\d\w?=&]+"#
-        ]
-
-        let textsToSearch = [
+        let extracted = MeetingURLExtractor.extractURL(from: [
             event.url?.absoluteString,
             event.location,
             event.notes
-        ].compactMap { $0 }
-
-        for text in textsToSearch {
-            for pattern in patterns {
-                if let url = findURL(matching: pattern, in: text) {
-                    return url
-                }
-            }
-        }
-
-        if let eventURL = event.url {
-            return eventURL
-        }
-
-        return nil
-    }
-
-    private func findURL(matching pattern: String, in text: String) -> URL? {
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
-            return nil
-        }
-
-        let range = NSRange(text.startIndex..., in: text)
-        if let match = regex.firstMatch(in: text, options: [], range: range) {
-            if let matchRange = Range(match.range, in: text) {
-                let urlString = String(text[matchRange])
-                return URL(string: urlString)
-            }
-        }
-
-        return nil
+        ])
+        return extracted ?? event.url
     }
 }

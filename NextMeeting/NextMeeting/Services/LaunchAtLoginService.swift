@@ -1,8 +1,11 @@
 import ServiceManagement
 import SwiftUI
+import os
 
 @MainActor
 class LaunchAtLoginService: ObservableObject {
+    private static let logger = Logger(subsystem: "com.nextmeeting.app", category: "LaunchAtLogin")
+
     @Published var isEnabled: Bool {
         didSet {
             setLaunchAtLogin(isEnabled)
@@ -21,7 +24,7 @@ class LaunchAtLoginService: ObservableObject {
                 try SMAppService.mainApp.unregister()
             }
         } catch {
-            print("Failed to \(enabled ? "enable" : "disable") launch at login: \(error)")
+            Self.logger.error("Failed to \(enabled ? "enable" : "disable") launch at login: \(error)")
         }
     }
 }

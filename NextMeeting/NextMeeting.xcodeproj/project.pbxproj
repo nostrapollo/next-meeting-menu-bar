@@ -10,6 +10,8 @@
 		A1000001 /* NextMeetingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000011 /* NextMeetingApp.swift */; };
 		A1000002 /* Meeting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000012 /* Meeting.swift */; };
 		A1000003 /* CalendarService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000013 /* CalendarService.swift */; };
+		A1000060 /* MeetingURLExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000062 /* MeetingURLExtractor.swift */; };
+		A1000061 /* MeetingAlertPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000063 /* MeetingAlertPolicy.swift */; };
 		A1000004 /* MenuContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000014 /* MenuContentView.swift */; };
 		A1000005 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000015 /* Assets.xcassets */; };
 		A1000006 /* MeetingAlertWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000030 /* MeetingAlertWindow.swift */; };
@@ -25,6 +27,8 @@
 		A1000011 /* NextMeetingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextMeetingApp.swift; sourceTree = "<group>"; };
 		A1000012 /* Meeting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Meeting.swift; sourceTree = "<group>"; };
 		A1000013 /* CalendarService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarService.swift; sourceTree = "<group>"; };
+		A1000062 /* MeetingURLExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingURLExtractor.swift; sourceTree = "<group>"; };
+		A1000063 /* MeetingAlertPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingAlertPolicy.swift; sourceTree = "<group>"; };
 		A1000014 /* MenuContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuContentView.swift; sourceTree = "<group>"; };
 		A1000015 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1000016 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -90,6 +94,8 @@
 			isa = PBXGroup;
 			children = (
 				A1000013 /* CalendarService.swift */,
+				A1000062 /* MeetingURLExtractor.swift */,
+				A1000063 /* MeetingAlertPolicy.swift */,
 				A1000031 /* LaunchAtLoginService.swift */,
 				A1000032 /* PreferencesService.swift */,
 				A1000033 /* KeyboardShortcutService.swift */,
@@ -180,6 +186,8 @@
 				A1000001 /* NextMeetingApp.swift in Sources */,
 				A1000002 /* Meeting.swift in Sources */,
 				A1000003 /* CalendarService.swift in Sources */,
+				A1000060 /* MeetingURLExtractor.swift in Sources */,
+				A1000061 /* MeetingAlertPolicy.swift in Sources */,
 				A1000004 /* MenuContentView.swift in Sources */,
 				A1000006 /* MeetingAlertWindow.swift in Sources */,
 				A1000040 /* LaunchAtLoginService.swift in Sources */,

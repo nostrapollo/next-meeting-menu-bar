@@ -78,6 +78,12 @@ struct MeetingAlertView: View {
     }
 }
 
+/// Borderless windows refuse key status by default, which would leave the
+/// Escape shortcut and keyboard focus dead — opt back in.
+private final class KeyableAlertWindow: NSWindow {
+    override var canBecomeKey: Bool { true }
+}
+
 class MeetingAlertWindowController {
     private var window: NSWindow?
     private var eventMonitor: Any?
@@ -95,7 +101,7 @@ class MeetingAlertWindowController {
 
         let hostingView = NSHostingView(rootView: alertView)
 
-        let newWindow = NSWindow(
+        let newWindow = KeyableAlertWindow(
             contentRect: NSScreen.main?.frame ?? NSRect(x: 0, y: 0, width: 800, height: 600),
             styleMask: [.borderless],
             backing: .buffered,
@@ -110,6 +116,8 @@ class MeetingAlertWindowController {
         newWindow.isReleasedWhenClosed = false
 
         self.window = newWindow
+        // Activate so key events (Escape) reach us even if another app was frontmost.
+        NSApp.activate(ignoringOtherApps: true)
         newWindow.makeKeyAndOrderFront(nil)
 
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
