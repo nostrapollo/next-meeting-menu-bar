@@ -80,6 +80,23 @@ docs: update installation instructions
 ### Models
 - `Meeting` — Core meeting data model with computed properties
 
+## App Icon
+
+The icon is generated, not hand-drawn — run from the repository root:
+
+```bash
+swift scripts/generate-app-icon.swift
+```
+
+It renders the same `calendar` SF Symbol the menu bar uses, so the two can't
+drift apart, and writes all ten slots into `AppIcon.appiconset` plus its
+`Contents.json`. Each size is rendered natively from the vector symbol rather
+than downscaled from one master, so the 16pt slot stays crisp.
+
+Tile geometry and colours are constants at the top of the script. It refuses to
+run if the glyph-to-tile contrast falls below 3:1, so the icon stays legible by
+brightness rather than relying on hue.
+
 ## Adding Meeting Platform Support
 
 To add a new meeting platform:
