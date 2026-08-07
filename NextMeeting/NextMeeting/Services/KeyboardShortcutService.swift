@@ -58,67 +58,62 @@ class KeyboardShortcutService: ObservableObject {
         }
     }
     
-    private func registerHotkey() {
-        // Unregister existing hotkey if any
-        unregisterHotkey()
-        
-        // Convert Carbon modifiers to EventHotKey modifiers
-        var carbonModifiers: UInt32 = 0
-        
-        if modifiers & UInt32(cmdKey) != 0 {
-            carbonModifiers |= UInt32(cmdKey)
+    /// The stored modifier mask, filtered to the Carbon modifier bits we support.
+    private var carbonModifiers: UInt32 {
+        var carbon: UInt32 = 0
+
+        for flag in [cmdKey, shiftKey, optionKey, controlKey] where modifiers & UInt32(flag) != 0 {
+            carbon |= UInt32(flag)
         }
-        if modifiers & UInt32(shiftKey) != 0 {
-            carbonModifiers |= UInt32(shiftKey)
+
+        return carbon
+    }
+
+    /// Carbon hands the handler a raw pointer instead of a context, so this is a
+    /// capture-free C function pointer that recovers the service from `userData`.
+    private static let hotKeyEventHandler: EventHandlerUPP = { _, event, userData in
+        guard let userData = userData else { return OSStatus(eventNotHandledErr) }
+
+        let service = Unmanaged<KeyboardShortcutService>.fromOpaque(userData).takeUnretainedValue()
+
+        // Verify this is our hotkey
+        var hotKeyID = EventHotKeyID()
+        let status = GetEventParameter(event,
+                                      UInt32(kEventParamDirectObject),
+                                      UInt32(typeEventHotKeyID),
+                                      nil,
+                                      MemoryLayout<EventHotKeyID>.size,
+                                      nil,
+                                      &hotKeyID)
+
+        if status == noErr && hotKeyID.id == service.hotKeyID.id {
+            Task { @MainActor in
+                service.onTrigger?()
+            }
+            return noErr
         }
-        if modifiers & UInt32(optionKey) != 0 {
-            carbonModifiers |= UInt32(optionKey)
-        }
-        if modifiers & UInt32(controlKey) != 0 {
-            carbonModifiers |= UInt32(controlKey)
-        }
-        
-        // Create event spec for hotkey
+
+        return OSStatus(eventNotHandledErr)
+    }
+
+    private func installEventHandler() {
         var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
                                        eventKind: UInt32(kEventHotKeyPressed))
-        
-        // Install event handler
-        let handler: EventHandlerUPP = { _, event, userData in
-            guard let userData = userData else { return OSStatus(eventNotHandledErr) }
-            
-            // Extract the service from userData
-            let service = Unmanaged<KeyboardShortcutService>.fromOpaque(userData).takeUnretainedValue()
-            
-            // Verify this is our hotkey
-            var hotKeyID = EventHotKeyID()
-            let status = GetEventParameter(event,
-                                          UInt32(kEventParamDirectObject),
-                                          UInt32(typeEventHotKeyID),
-                                          nil,
-                                          MemoryLayout<EventHotKeyID>.size,
-                                          nil,
-                                          &hotKeyID)
-            
-            if status == noErr && hotKeyID.id == service.hotKeyID.id {
-                Task { @MainActor in
-                    service.onTrigger?()
-                }
-                return noErr
-            }
-            
-            return OSStatus(eventNotHandledErr)
-        }
-        
-        // Install the event handler
+
         let selfPtr = Unmanaged.passUnretained(self).toOpaque()
         InstallEventHandler(GetApplicationEventTarget(),
-                           handler,
+                           Self.hotKeyEventHandler,
                            1,
                            &eventType,
                            selfPtr,
                            &eventHandler)
-        
-        // Register the hotkey
+    }
+
+    private func registerHotkey() {
+        // Unregister existing hotkey if any
+        unregisterHotkey()
+        installEventHandler()
+
         var hotKeyRefTemp: EventHotKeyRef?
         let status = RegisterEventHotKey(UInt32(keyCode),
                                         carbonModifiers,
@@ -126,7 +121,7 @@ class KeyboardShortcutService: ObservableObject {
                                         GetApplicationEventTarget(),
                                         0,
                                         &hotKeyRefTemp)
-        
+
         if status == noErr {
             hotKeyRef = hotKeyRefTemp
             Self.logger.info("Global keyboard shortcut registered: \(self.shortcutDisplayString)")
@@ -134,7 +129,7 @@ class KeyboardShortcutService: ObservableObject {
             Self.logger.error("Failed to register global keyboard shortcut: \(status)")
         }
     }
-    
+
     private func unregisterHotkey() {
         if let hotKeyRef = hotKeyRef {
             UnregisterEventHotKey(hotKeyRef)

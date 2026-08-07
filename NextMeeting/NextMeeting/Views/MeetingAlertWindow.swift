@@ -35,10 +35,10 @@ struct MeetingAlertView: View {
 
                 HStack(spacing: 20) {
                     if let url = meeting.meetingURL {
-                        Button(action: {
+                        Button {
                             onJoin?(url)
                             onDismiss()
-                        }) {
+                        } label: {
                             HStack {
                                 Image(systemName: "video.fill")
                                 Text("Join Meeting")

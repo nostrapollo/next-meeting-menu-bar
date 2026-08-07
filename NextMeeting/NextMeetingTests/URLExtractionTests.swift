@@ -2,15 +2,23 @@ import Foundation
 
 /// These exercise the real `MeetingURLExtractor` used by the app — not a copy
 /// of its patterns — so a regex change that breaks extraction fails here.
+private func extracted(_ text: String) -> String? {
+    MeetingURLExtractor.extractURL(from: [text])?.absoluteString
+}
+
 func runURLExtractionTests() {
     print("MeetingURLExtractor")
 
-    func extracted(_ text: String) -> String? {
-        MeetingURLExtractor.extractURL(from: [text])?.absoluteString
-    }
+    runZoomCases()
+    runGoogleMeetCases()
+    runTeamsCases()
+    runOtherProviderCases()
+    runExtractionEdgeCases()
+}
 
-    // MARK: Zoom
+// MARK: Zoom
 
+private func runZoomCases() {
     TestRunner.test("extracts Zoom URL with password") {
         TestRunner.expectEqual(
             extracted("Join us at https://zoom.us/j/123456789?pwd=abc123"),
@@ -31,25 +39,31 @@ func runURLExtractionTests() {
             "https://zoom.us/j/123?pwd=abc.def-ghi"
         )
     }
+}
 
-    // MARK: Google Meet
+// MARK: Google Meet
 
+private func runGoogleMeetCases() {
     TestRunner.test("extracts Google Meet URL") {
         TestRunner.expectEqual(
             extracted("Join: https://meet.google.com/abc-defg-hij"),
             "https://meet.google.com/abc-defg-hij"
         )
     }
+}
 
-    // MARK: Microsoft Teams
+// MARK: Microsoft Teams
 
+private func runTeamsCases() {
     TestRunner.test("keeps the context query on Teams URLs") {
         let link = "https://teams.microsoft.com/l/meetup-join/19%3ameeting_ABC%40thread.v2/0?context=%7b%22Tid%22%3a%22x%22%7d"
         TestRunner.expectEqual(extracted("Teams meeting: \(link)"), link)
     }
+}
 
-    // MARK: Other providers
+// MARK: Other providers
 
+private func runOtherProviderCases() {
     TestRunner.test("extracts WebEx URL") {
         TestRunner.expectEqual(
             extracted("WebEx: https://company.webex.com/meet/john.doe"),
@@ -100,9 +114,11 @@ func runURLExtractionTests() {
             "https://meet.jit.si/MyMeetingRoom"
         )
     }
+}
 
-    // MARK: Edge cases
+// MARK: Edge cases
 
+private func runExtractionEdgeCases() {
     TestRunner.test("returns nil when no URL present") {
         TestRunner.expect(extracted("This is just a regular meeting description with no links") == nil)
     }
