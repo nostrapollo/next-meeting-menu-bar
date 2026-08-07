@@ -3,29 +3,40 @@ import SwiftUI
 
 /// All time-dependent behavior is exercised against a fixed reference date so
 /// results don't depend on when the tests run.
+private let meetingNow = Date(timeIntervalSince1970: 1_750_000_000)
+
+private func makeMeeting(
+    id: String = "test-id",
+    title: String = "Test Meeting",
+    startOffset: TimeInterval = 900,
+    endOffset: TimeInterval = 4500,
+    meetingURL: URL? = nil
+) -> Meeting {
+    Meeting(
+        id: id,
+        title: title,
+        startDate: meetingNow.addingTimeInterval(startOffset),
+        endDate: meetingNow.addingTimeInterval(endOffset),
+        calendarColor: .blue,
+        calendarName: "Test Calendar",
+        meetingURL: meetingURL
+    )
+}
+
 func runMeetingTests() {
     print("Meeting")
-    let now = Date(timeIntervalSince1970: 1_750_000_000)
 
-    func makeMeeting(
-        id: String = "test-id",
-        title: String = "Test Meeting",
-        startOffset: TimeInterval = 900,
-        endOffset: TimeInterval = 4500,
-        meetingURL: URL? = nil
-    ) -> Meeting {
-        Meeting(
-            id: id,
-            title: title,
-            startDate: now.addingTimeInterval(startOffset),
-            endDate: now.addingTimeInterval(endOffset),
-            calendarColor: .blue,
-            calendarName: "Test Calendar",
-            meetingURL: meetingURL
-        )
-    }
+    runCountdownStringCases()
+    runIsHappeningNowCases()
+    runIsJustStartingCases()
+    runMenuBarTitleCases()
+    runMakeIDCases()
+}
 
-    // MARK: countdownString
+// MARK: countdownString
+
+private func runCountdownStringCases() {
+    let now = meetingNow
 
     TestRunner.test("countdown is Now during the meeting") {
         let meeting = makeMeeting(startOffset: -30, endOffset: 1800)
@@ -56,8 +67,12 @@ func runMeetingTests() {
         let meeting = makeMeeting(startOffset: 30, endOffset: 3630)
         TestRunner.expectEqual(meeting.countdownString(at: now), "<1m")
     }
+}
 
-    // MARK: isHappeningNow
+// MARK: isHappeningNow
+
+private func runIsHappeningNowCases() {
+    let now = meetingNow
 
     TestRunner.test("isHappeningNow true mid-meeting") {
         let meeting = makeMeeting(startOffset: -300, endOffset: 1500)
@@ -73,8 +88,12 @@ func runMeetingTests() {
         let meeting = makeMeeting(startOffset: -3600, endOffset: -300)
         TestRunner.expect(!meeting.isHappeningNow(at: now))
     }
+}
 
-    // MARK: isJustStarting
+// MARK: isJustStarting
+
+private func runIsJustStartingCases() {
+    let now = meetingNow
 
     TestRunner.test("isJustStarting true within 60s of start") {
         let meeting = makeMeeting(startOffset: -30, endOffset: 3570)
@@ -90,8 +109,12 @@ func runMeetingTests() {
         let meeting = makeMeeting(startOffset: 30, endOffset: 3630)
         TestRunner.expect(!meeting.isJustStarting(at: now))
     }
+}
 
-    // MARK: menuBarTitle
+// MARK: menuBarTitle
+
+private func runMenuBarTitleCases() {
+    let now = meetingNow
 
     TestRunner.test("short title is not truncated") {
         let meeting = makeMeeting(title: "Team Standup")
@@ -104,8 +127,12 @@ func runMeetingTests() {
         TestRunner.expect(title.contains("..."), "expected ellipsis in \(title)")
         TestRunner.expect(title.count <= 30, "title too long: \(title)")
     }
+}
 
-    // MARK: makeID
+// MARK: makeID
+
+private func runMakeIDCases() {
+    let now = meetingNow
 
     TestRunner.test("makeID distinguishes occurrences of a recurring event") {
         let first = Meeting.makeID(eventIdentifier: "recurring-standup", startDate: now)
@@ -114,9 +141,9 @@ func runMeetingTests() {
     }
 
     TestRunner.test("makeID is stable for the same occurrence") {
-        let a = Meeting.makeID(eventIdentifier: "abc", startDate: now)
-        let b = Meeting.makeID(eventIdentifier: "abc", startDate: now)
-        TestRunner.expectEqual(a, b)
+        let first = Meeting.makeID(eventIdentifier: "abc", startDate: now)
+        let second = Meeting.makeID(eventIdentifier: "abc", startDate: now)
+        TestRunner.expectEqual(first, second)
     }
 
     TestRunner.test("makeID tolerates a nil event identifier") {

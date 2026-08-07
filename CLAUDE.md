@@ -32,7 +32,7 @@ Config in `.swiftlint.yml`: `line_length` and `trailing_whitespace` are disabled
 ./test.sh
 ```
 
-Tests run with the Command Line Tools alone — no Xcode or XCTest. `test.sh` compiles the pure-logic sources (`Meeting`, `MeetingURLExtractor`, `MeetingAlertPolicy`) together with `NextMeeting/NextMeetingTests/` (a small assertion harness, `TestHarness.swift`, plus `main.swift` runner) into a plain executable and runs it. Time-dependent tests inject a fixed `now` — never assert against the wall clock. Add new cases to the existing `run*Tests()` functions or register a new one in `main.swift`.
+Tests run with the Command Line Tools alone — no Xcode or XCTest. `test.sh` compiles the pure-logic sources (`Meeting`, `MeetingURLExtractor`, `MeetingAlertPolicy`, `MeetingSelection`, `MeetingAlertTracker`, `RepeatingTimer`) together with `NextMeeting/NextMeetingTests/` (a small assertion harness, `TestHarness.swift`, plus `main.swift` runner) into a plain executable and runs it. Time-dependent tests inject a fixed `now` — never assert against the wall clock. Add new cases to the existing `run*Tests()` functions or register a new one in `main.swift`.
 
 ## Architecture
 
@@ -40,9 +40,12 @@ Tests run with the Command Line Tools alone — no Xcode or XCTest. `test.sh` co
 
 **Services (all `@MainActor ObservableObject`):**
 
-- **`CalendarService`** — EventKit integration; takes `PreferencesService` in its init. Owns two timers: a fetch timer on the configured refresh interval, and a 1-second display timer that publishes `now` (drives live countdown rendering) and evaluates `MeetingAlertPolicy` (so the one-minute alert window can't be skipped by a slow refresh interval). Meeting ids come from `Meeting.makeID` (eventIdentifier + start date — recurring occurrences must not share an id).
+- **`CalendarService`** — EventKit integration; takes `PreferencesService` in its init. Owns two timers (both via `RepeatingTimer`): a fetch timer on the configured refresh interval, and a 1-second display timer that publishes `now` (drives live countdown rendering) and evaluates `MeetingAlertPolicy` (so the one-minute alert window can't be skipped by a slow refresh interval). Meeting ids come from `Meeting.makeID` (eventIdentifier + start date — recurring occurrences must not share an id).
 - **`MeetingURLExtractor`** — pure regex-based URL extraction (Zoom, Google Meet, Teams, WebEx, Whereby, Around, Discord, Slack Huddle, Jitsi), no EventKit dependency, unit tested directly. Patterns live ONLY here — never duplicate them in tests.
 - **`MeetingAlertPolicy`** — pure alert-window selection with injectable clock, unit tested directly.
+- **`MeetingSelection`** — pure current/next-meeting selection with injectable clock. `next` matches on `startDate > now`, NOT on "not happening now": the fetched list is only refreshed on the refresh interval while `now` ticks every second, so an already-finished meeting lingers in it.
+- **`MeetingAlertTracker`** — pure record of which meetings have shown an alert. Presentation is injected and returns a Bool; a meeting is recorded ONLY when the alert actually reached the screen, so an alert refused because an earlier one was still up gets retried instead of being silently swallowed.
+- **`RepeatingTimer`** — schedules repeating timers that hold their target weakly and invalidate themselves once it is gone. Use this instead of `Timer(timeInterval:repeats:)` directly: `[weak self]` on an inner `Task` does not break the cycle, because the outer block still captures `self` strongly to form that capture.
 - **`PreferencesService`** — UserDefaults-backed settings: lookahead hours, refresh interval, alert timing, excluded calendars. Each `@Published` property persists on `didSet`.
 - **`KeyboardShortcutService`** — Carbon framework global hotkey registration (`RegisterEventHotKey`). Requires Accessibility permission.
 - **`LaunchAtLoginService`** — `SMAppService.mainApp` wrapper.

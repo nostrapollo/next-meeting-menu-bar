@@ -81,9 +81,10 @@ struct NextMeetingApp: App {
     }
 
     private func showAlert(for meeting: Meeting) {
-        calendarService.markMeetingAlerted(meeting)
-        alertController.showAlert(for: meeting) { url in
-            NSWorkspace.shared.open(url)
+        calendarService.presentAlert(for: meeting) { meeting in
+            alertController.showAlert(for: meeting) { url in
+                NSWorkspace.shared.open(url)
+            }
         }
     }
 
