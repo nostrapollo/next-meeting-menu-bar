@@ -15,7 +15,7 @@ class CalendarService: ObservableObject {
 
     private let eventStore = EKEventStore()
     private let preferencesService: PreferencesService
-    private var alertedMeetingIds: Set<String> = []
+    private var alertTracker = MeetingAlertTracker()
     private var refreshTimer: Timer?
     private var displayTimer: Timer?
 
@@ -38,11 +38,11 @@ class CalendarService: ObservableObject {
     }
 
     var currentMeeting: Meeting? {
-        meetings.first { $0.isHappeningNow(at: now) }
+        MeetingSelection.current(in: meetings, at: now)
     }
 
     var nextMeeting: Meeting? {
-        meetings.first { !$0.isHappeningNow(at: now) }
+        MeetingSelection.next(in: meetings, at: now)
     }
 
     init(preferencesService: PreferencesService) {
@@ -106,24 +106,20 @@ class CalendarService: ObservableObject {
         fetchUpcomingMeetings()
 
         let interval = TimeInterval(preferencesService.refreshIntervalSeconds)
-        let timer = Timer(timeInterval: interval, repeats: true) { _ in
-            Task { @MainActor [weak self] in
-                self?.fetchUpcomingMeetings()
+        refreshTimer = RepeatingTimer.scheduled(every: interval, target: self) { service in
+            Task { @MainActor in
+                service.fetchUpcomingMeetings()
             }
         }
-        RunLoop.main.add(timer, forMode: .common)
-        refreshTimer = timer
     }
 
     private func startDisplayTimer() {
         guard displayTimer == nil else { return }
-        let timer = Timer(timeInterval: 1, repeats: true) { _ in
-            Task { @MainActor [weak self] in
-                self?.displayTick()
+        displayTimer = RepeatingTimer.scheduled(every: 1, target: self) { service in
+            Task { @MainActor in
+                service.displayTick()
             }
         }
-        RunLoop.main.add(timer, forMode: .common)
-        displayTimer = timer
     }
 
     private func displayTick() {
@@ -133,7 +129,7 @@ class CalendarService: ObservableObject {
         if fullScreenAlertsEnabled {
             candidate = MeetingAlertPolicy.meetingToAlert(
                 in: meetings,
-                alertedIDs: alertedMeetingIds,
+                alertedIDs: alertTracker.alertedIDs,
                 alertMinutesBefore: preferencesService.alertMinutesBefore,
                 now: now
             )
@@ -146,16 +142,23 @@ class CalendarService: ObservableObject {
         }
     }
 
-    func markMeetingAlerted(_ meeting: Meeting) {
-        alertedMeetingIds.insert(meeting.id)
+    /// Shows the alert for `meeting` via `present`, which returns `false` if it
+    /// could not be shown (an earlier alert is still on screen).
+    ///
+    /// The published candidate is cleared either way: once presented the policy
+    /// filters the meeting out, and once refused clearing it lets the next
+    /// display tick republish the same meeting so the alert is retried rather
+    /// than silently dropped.
+    func presentAlert(for meeting: Meeting, using present: (Meeting) -> Bool) {
+        alertTracker.presentAlert(for: meeting, using: present)
+
         if meetingToAlert?.id == meeting.id {
             meetingToAlert = nil
         }
     }
 
     private func cleanupAlertedMeetingIds() {
-        let currentMeetingIds = Set(meetings.map { $0.id })
-        alertedMeetingIds = alertedMeetingIds.intersection(currentMeetingIds)
+        alertTracker.forgetMeetings(notIn: Set(meetings.map { $0.id }))
     }
 
     // MARK: - Fetching

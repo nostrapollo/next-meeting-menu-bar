@@ -88,8 +88,11 @@ class MeetingAlertWindowController {
     private var window: NSWindow?
     private var eventMonitor: Any?
 
-    func showAlert(for meeting: Meeting, onJoin: @escaping (URL) -> Void) {
-        guard window == nil else { return }
+    /// - Returns: `false` if an earlier alert is still on screen, so the caller
+    ///   can retry rather than treat this meeting as alerted.
+    @discardableResult
+    func showAlert(for meeting: Meeting, onJoin: @escaping (URL) -> Void) -> Bool {
+        guard window == nil else { return false }
 
         let alertView = MeetingAlertView(
             meeting: meeting,
@@ -127,6 +130,8 @@ class MeetingAlertWindowController {
             }
             return event
         }
+
+        return true
     }
 
     func dismiss() {

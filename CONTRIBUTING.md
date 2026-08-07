@@ -95,9 +95,15 @@ To add a new meeting platform:
 
 ## Testing
 
+Run them with `./test.sh` — no Xcode required.
+
 Test files are in `NextMeeting/NextMeetingTests/`:
 - `MeetingTests.swift` — Meeting model tests
 - `URLExtractionTests.swift` — URL pattern tests
+- `AlertPolicyTests.swift` — alert-window selection tests
+- `MeetingSelectionTests.swift` — current/next meeting selection tests
+- `AlertTrackerTests.swift` — alert presentation and recording tests
+- `RepeatingTimerTests.swift` — timer ownership tests
 
 To add tests to the Xcode project:
 1. File → New → Target → Unit Testing Bundle
