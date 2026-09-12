@@ -14,6 +14,7 @@ swiftc \
   NextMeeting/NextMeeting/Models/Meeting.swift \
   NextMeeting/NextMeeting/Services/MeetingURLExtractor.swift \
   NextMeeting/NextMeeting/Services/MeetingAlertPolicy.swift \
+  NextMeeting/NextMeeting/Services/PineTimeRelay.swift \
   NextMeeting/NextMeetingTests/*.swift
 
 "$BUILD_DIR/nextmeeting-tests"

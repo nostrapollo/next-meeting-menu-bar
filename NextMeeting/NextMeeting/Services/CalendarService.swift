@@ -14,6 +14,7 @@ class CalendarService: ObservableObject {
     private static let logger = Logger(subsystem: "com.nextmeeting.app", category: "CalendarService")
 
     private let eventStore = EKEventStore()
+    private let pineTimeRelay = PineTimeRelay()
     private let preferencesService: PreferencesService
     private var alertedMeetingIds: Set<String> = []
     private var refreshTimer: Timer?
@@ -128,6 +129,7 @@ class CalendarService: ObservableObject {
 
     private func displayTick() {
         now = Date()
+        pineTimeRelay.update(meetings: hasAccess ? meetings : [], now: now)
 
         let candidate: Meeting?
         if fullScreenAlertsEnabled {

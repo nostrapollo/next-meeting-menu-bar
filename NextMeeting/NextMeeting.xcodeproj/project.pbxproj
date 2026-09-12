@@ -20,6 +20,7 @@
 		A1000043 /* KeyboardShortcutService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000033 /* KeyboardShortcutService.swift */; };
 		A1000044 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000034 /* SettingsView.swift */; };
 		A1000045 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000035 /* SettingsWindowController.swift */; };
+		A1000070 /* PineTimeRelay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000071 /* PineTimeRelay.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -39,6 +40,7 @@
 		A1000033 /* KeyboardShortcutService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutService.swift; sourceTree = "<group>"; };
 		A1000034 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A1000035 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
+		A1000071 /* PineTimeRelay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PineTimeRelay.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -96,6 +98,7 @@
 				A1000013 /* CalendarService.swift */,
 				A1000062 /* MeetingURLExtractor.swift */,
 				A1000063 /* MeetingAlertPolicy.swift */,
+				A1000071 /* PineTimeRelay.swift */,
 				A1000031 /* LaunchAtLoginService.swift */,
 				A1000032 /* PreferencesService.swift */,
 				A1000033 /* KeyboardShortcutService.swift */,
@@ -188,6 +191,7 @@
 				A1000003 /* CalendarService.swift in Sources */,
 				A1000060 /* MeetingURLExtractor.swift in Sources */,
 				A1000061 /* MeetingAlertPolicy.swift in Sources */,
+				A1000070 /* PineTimeRelay.swift in Sources */,
 				A1000004 /* MenuContentView.swift in Sources */,
 				A1000006 /* MeetingAlertWindow.swift in Sources */,
 				A1000040 /* LaunchAtLoginService.swift in Sources */,
