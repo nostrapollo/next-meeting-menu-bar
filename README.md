@@ -50,12 +50,14 @@ Meeting URLs are extracted from event URL, location, and notes fields using patt
 ## Requirements
 
 - macOS 13.0 (Ventura) or later
-- Calendar access (reads events locally — no data leaves your Mac)
+- Calendar access (reads events locally; optional PineTime relay is described below)
 - Accessibility access (for global keyboard shortcut)
 
 ## Privacy
 
-Everything runs locally. No analytics, no telemetry, no network requests except opening meeting URLs when you click Join. No third-party dependencies — pure Apple frameworks only.
+By default, everything runs locally. No analytics or telemetry. No network requests except opening meeting URLs when you click Join. No third-party dependencies — pure Apple frameworks only.
+
+The optional personal PineTime relay sends the selected meeting title and start/end timestamps to a local watch API, which forwards them through ntfy to an Android phone and watch. It is disabled by default. It never sends meeting URLs, notes, attendees, or calendar names. See [PineTime relay setup](docs/pinetime.md).
 
 ## Troubleshooting
 
